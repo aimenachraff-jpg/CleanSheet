@@ -1,0 +1,6 @@
+{
+  "columns": {"OrderID": "id", "Customer": "name", "City": "category", "Product": "category",
+              "Qty": "qty", "Price": "price", "Date": "date", "Phone": "phone"},
+  "date_order": "dmy",
+  "category_maps": {"City": {"algiers": "Alger"}}
+}
