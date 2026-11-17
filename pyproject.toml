@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cleansheet"
+version = "1.1.0"
+description = "Clean messy Excel/CSV files offline: logs every change and flags ambiguous values instead of guessing. Arabic, French and English headers, with locale packs for Algeria, Morocco, Tunisia, Egypt and France."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+authors = [{ name = "aimenachraff-jpg" }]
+dependencies = ["openpyxl"]
+keywords = ["excel", "csv", "data-cleaning", "arabic", "openpyxl", "algeria", "morocco", "tunisia", "offline"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Environment :: Win32 (MS Windows)",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: Arabic",
+    "Natural Language :: French",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Office/Business :: Financial :: Spreadsheet",
+]
+
+[project.urls]
+Homepage = "https://github.com/aimenachraff-jpg/CleanSheet"
+Repository = "https://github.com/aimenachraff-jpg/CleanSheet"
+Issues = "https://github.com/aimenachraff-jpg/CleanSheet/issues"
+
+[project.scripts]
+cleansheet = "clean_sheet:main"
+cleansheet-gui = "clean_sheet_gui:main"
+
+[tool.setuptools]
+py-modules = ["clean_sheet", "clean_sheet_locales", "clean_sheet_gui"]

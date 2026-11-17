@@ -18,3 +18,4 @@ jobs:
           python test_table_detection.py
           python test_multilevel.py
           python test_gui_logic.py
+          python test_locale_packs.py

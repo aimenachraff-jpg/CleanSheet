@@ -15,9 +15,12 @@ from pathlib import Path
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
+from clean_sheet_locales import LOCALES
 
 DEFAULTS = {
     "columns": {}, "date_order": "dmy", "country_code": "213", "national_length": 9,
+    "mobile_prefixes": "23456789",
+    "leading_zero_required": True,
     "currency_tokens": ["dzd", "da", "dinars", "dinar", "eur", "usd", "€", "$", "دينار جزائري", "دينار", "دنانير", "د.ج", "د ج", "دج"],
     "category_maps": {}, "similarity_threshold": 0.88, "id_column": None,
 }
@@ -57,7 +60,8 @@ MONTHS.update({ar_norm(k): v for k, v in {
     "جانفي": 1, "فيفري": 2, "مارس": 3, "أفريل": 4, "ماي": 5, "جوان": 6, "جويلية": 7, "أوت": 8, "سبتمبر": 9, "أكتوبر": 10, "نوفمبر": 11, "ديسمبر": 12,
     "يناير": 1, "فبراير": 2, "أبريل": 4, "مايو": 5, "يونيو": 6, "يوليو": 7, "أغسطس": 8,
     "كانون الثاني": 1, "شباط": 2, "آذار": 3, "نيسان": 4, "أيار": 5, "حزيران": 6, "تموز": 7, "آب": 8, "أيلول": 9,
-    "تشرين الأول": 10, "تشرين الثاني": 11, "كانون الأول": 12}.items()})
+    "تشرين الأول": 10, "تشرين الثاني": 11, "كانون الأول": 12,
+    "دجنبر": 12}.items()})
 NUM_WORDS.update({ar_norm(k): v for k, v in {"واحد": 1, "واحدة": 1, "اثنان": 2, "اثنين": 2, "ثلاثة": 3, "أربعة": 4, "خمسة": 5, "ستة": 6,
                                              "سبعة": 7, "ثمانية": 8, "تسعة": 9, "عشرة": 10}.items()})
 
@@ -176,6 +180,10 @@ def parse_phone(v, cfg):
     intl = s.startswith("+") or s.startswith("00")
     if s.startswith("00"): digits = digits[2:]
     status, msg = "ok", ""
+    if not cc:  # generic locale: no country assumed, only plausibility
+        if len(digits) < 8 or len(digits) > 15: return v, "fail", f"phone has {len(digits)} digits, expected between 8 and 15"
+        if intl: return ("+" if s.startswith("+") else "") + digits, "ok", ""
+        return digits, "verify", "no country code set (--locale); number kept as written"
     if intl:
         if digits.startswith(cc): nat = digits[len(cc):]
         elif 8 <= len(digits) <= 15: return "+" + digits, "ok", ""
@@ -185,9 +193,11 @@ def parse_phone(v, cfg):
     elif digits.startswith(cc) and len(digits) == len(cc) + nl: nat = digits[len(cc):]
     else:
         nat = digits
-        if len(nat) == nl: status, msg = "verify", "leading 0 missing in source; assumed local number"
+        if len(nat) == nl and cfg.get("leading_zero_required", True):
+            status, msg = "verify", "leading 0 missing in source; assumed local number"
     if len(nat) != nl: return v, "fail", f"phone has {len(nat)} digits after country code, expected {nl}"
-    if cc == "213" and nat[0] not in "23456789" : status, msg = "verify", "unusual Algerian number prefix"
+    prefixes = cfg.get("mobile_prefixes") or ""
+    if prefixes and nat[0] not in prefixes: status, msg = "verify", f"unusual +{cc} number prefix"
     return f"+{cc}{nat}", status, msg
 
 def parse_email(v, cfg):
@@ -276,6 +286,15 @@ def sniff_type(values, cfg):
         return bool(re.fullmatch(r"-?\d+([.,]\d+)?", t)) and not re.fullmatch(r"0\d+", t)
     if frac(isnum) >= 0.8: return "number"
     return "text"
+
+def merge_locale(user_cfg, locale):
+    """Layer a locale pack under the user's config; explicit --config keys win."""
+    loc = LOCALES.get(locale or "")
+    if not loc: return user_cfg
+    merged = {k: v for k, v in loc.items() if k != "months"}
+    merged.update(user_cfg)
+    MONTHS.update({ar_norm(k): v for k, v in loc.get("months", {}).items()})
+    return merged
 
 def resolve_config(user_cfg, headers, rows=None, detect_names=None):
     cfg = json.loads(json.dumps(DEFAULTS)); cfg.update({k: v for k, v in (user_cfg or {}).items() if k in DEFAULTS})
@@ -553,10 +572,10 @@ def report_md(src_name, headers, cfg, rows, keep, removed, log, blanks, cells, t
     L += ["", "Nothing flagged above was silently guessed: yellow/orange cells in the Clean sheet mark each one. The original file was not modified."]
     return "\n".join(L)
 
-def run(path, cfg_path=None, out_dir=None, sheet=None, header_row=None, also_csv=False, write_config=None, levels=None, skip_totals=True):
+def run(path, cfg_path=None, out_dir=None, sheet=None, header_row=None, also_csv=False, write_config=None, levels=None, skip_totals=True, locale="dz"):
     src = Path(path); info = read_table_info(src, sheet, header_row, levels, skip_totals); headers, rows, blanks = info["headers"], info["rows"], info["blanks"]
     user_cfg = json.loads(Path(cfg_path).read_text(encoding="utf-8")) if cfg_path else {}
-    cfg = resolve_config(user_cfg, headers, rows, info["detect_names"])
+    cfg = resolve_config(merge_locale(user_cfg, locale), headers, rows, info["detect_names"])
     if write_config:
         Path(write_config).write_text(json.dumps({k: v for k, v in cfg.items() if not k.startswith("_")}, indent=2, ensure_ascii=False), encoding="utf-8")
     out = Path(out_dir) if out_dir else src.parent; out.mkdir(parents=True, exist_ok=True)
@@ -571,12 +590,16 @@ def run(path, cfg_path=None, out_dir=None, sheet=None, header_row=None, also_csv
             for i in keep: w.writerow([("" if cells[(i, j)][0] is None else cells[(i, j)][0]) for j in range(len(headers))])
     return {"xlsx": target, "report": rep, "rows_in": len(rows), "rows_out": len(keep), "removed": len(removed), "log": log, "cells": cells, "keep": keep, "headers": headers, "cfg": cfg, "info": info}
 
-if __name__ == "__main__":
+def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("input"); ap.add_argument("--config"); ap.add_argument("--out-dir"); ap.add_argument("--sheet")
     ap.add_argument("--header-row", type=int, default=None, help="row number of the LOWEST header row"); ap.add_argument("--levels", type=int, default=None, help="header levels (1 = single header row); default: detect"); ap.add_argument("--keep-total-rows", action="store_true"); ap.add_argument("--also-csv", action="store_true"); ap.add_argument("--write-config")
-    a = ap.parse_args()
-    r = run(a.input, a.config, a.out_dir, a.sheet, a.header_row, a.also_csv, a.write_config, a.levels, not a.keep_total_rows)
+    ap.add_argument("--locale", default="dz", choices=sorted(LOCALES), help="country pack for phone/price/date rules (default: dz)")
+    a = ap.parse_args(argv)
+    r = run(a.input, a.config, a.out_dir, a.sheet, a.header_row, a.also_csv, a.write_config, a.levels, not a.keep_total_rows, a.locale)
     c = Counter(l["status"] for l in r["log"])
     print(f"{r['rows_in']} rows in -> {r['rows_out']} out ({r['removed']} duplicates removed). VERIFY={c['VERIFY']} UNRESOLVED={c['UNRESOLVED']} MISSING={c['MISSING']}")
     print("Wrote:", r["xlsx"], "and", r["report"])
+
+if __name__ == "__main__":
+    main()

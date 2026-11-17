@@ -185,5 +185,9 @@ class App(tk.Tk):
         self.open_file_btn.config(state="normal"); self.open_dir_btn.config(state="normal")
 
 
-if __name__ == "__main__":
+def main():
     App().mainloop()
+
+
+if __name__ == "__main__":
+    main()
