@@ -49,7 +49,9 @@ Flagged for you, never decided for you:
 
 ## Getting it running
 
-You need Python 3 and one library:
+The easiest way, no Python needed: download [CleanSheet-1.0.0-windows.zip](https://github.com/aimenachraff-jpg/CleanSheet/releases/latest) from the Releases page, extract it, and run `CleanSheet.exe` from the extracted `CleanSheet` folder (Windows 10 or 11, 64-bit). Windows will show a SmartScreen warning because the exe is not signed; click More info, then Run anyway.
+
+If you prefer running it from source, you need Python 3 and one library:
 
 ```
 pip install openpyxl
