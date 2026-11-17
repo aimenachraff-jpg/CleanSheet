@@ -8,6 +8,8 @@ It is rule-based code, not AI. It never guesses: anything ambiguous is flagged i
 
 Built with real sales data in mind: columns named in French, English or Arabic, files where the table does not start at A1, two-level headers, "Total" rows at the bottom, prices like `1 450 DA` or `دج`, dates like `جانفي 2026`.
 
+![The CleanSheet window: pick a file, check the guessed column types, click Clean](app.png)
+
 ## How it works
 
 1. Open the app and pick a `.xlsx` or `.csv` file.
@@ -21,6 +23,8 @@ Built with real sales data in mind: columns named in French, English or Arabic, 
 | Change log | Every change, before and after. |
 | Before-After | First 20 rows side by side. |
 | Summary | Counts, plus the rules that were applied. |
+
+![The Clean sheet: yellow = changed with an assumption, orange = unreadable or missing, original kept](cleaned.png)
 
 Rows that look like totals ("Total", "Somme", "المجموع") are not cleaned as data; they are copied to a Skipped rows sheet. You can keep them in with one checkbox.
 
