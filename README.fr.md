@@ -8,6 +8,8 @@ C'est du code à base de règles, pas de l'IA. L'outil ne devine jamais : toute 
 
 Pensé pour les vrais fichiers de vente : colonnes en français, anglais ou arabe, tableaux qui ne commencent pas en A1, en-têtes sur deux niveaux, lignes « Total » en bas, prix comme `1 450 DA`, `1 250 DH` ou `دج`, dates comme `جانفي 2026` ou `غشت 2026`.
 
+![Aperçu : l'app charge un fichier arabe, la feuille Clean surligne la date ambiguë en jaune, la feuille Review explique quoi vérifier](demo.gif)
+
 ## Démarrage rapide
 
 Windows sans Python : téléchargez le zip sur la page [Releases](https://github.com/aimenachraff-jpg/CleanSheet/releases/latest), décompressez, lancez `CleanSheet.exe`. Windows affichera un avertissement SmartScreen car l'exe n'est pas signé : More info, puis Run anyway.
