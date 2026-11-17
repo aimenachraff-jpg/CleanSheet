@@ -1,5 +1,7 @@
 # CleanSheet
 
+[![tests](https://github.com/aimenachraff-jpg/EXLCleaner/actions/workflows/tests.yml/badge.svg)](https://github.com/aimenachraff-jpg/EXLCleaner/actions/workflows/tests.yml)
+
 Cleans messy Excel and CSV files: extra spaces, inconsistent capitalization, exact duplicates, mixed price and date formats, numbers written as words, Arabic-Indic digits, Algerian phone numbers. You get the cleaned file, a log of every change, and a list of the values the tool could not decide on.
 
 It is rule-based code, not AI. It never guesses: anything ambiguous is flagged in the output for you to decide. Your original file is never modified, and nothing leaves your computer.
