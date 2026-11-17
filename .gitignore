@@ -12,6 +12,9 @@ cleaned_output/
 # Local, private business files (never publish)
 private/
 
+# Release zips
+_release/
+
 # Editor
 .vscode/
 
