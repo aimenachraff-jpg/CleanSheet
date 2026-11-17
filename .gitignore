@@ -15,6 +15,9 @@ private/
 # Release zips
 _release/
 
+# Python build residue
+*.egg-info/
+
 # Editor
 .vscode/
 

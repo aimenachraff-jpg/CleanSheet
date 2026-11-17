@@ -1,6 +1,7 @@
 # CleanSheet
 
 [![tests](https://github.com/aimenachraff-jpg/CleanSheet/actions/workflows/tests.yml/badge.svg)](https://github.com/aimenachraff-jpg/CleanSheet/actions/workflows/tests.yml)
+[![PyPI](https://img.shields.io/pypi/v/cleansheet)](https://pypi.org/project/cleansheet/)
 
 Cleans messy Excel and CSV files: extra spaces, inconsistent capitalization, exact duplicates, mixed price and date formats, numbers written as words, Arabic-Indic digits, country phone formats. You get the cleaned file, a log of every change, and a list of the values the tool could not decide on.
 
