@@ -73,7 +73,7 @@ Flagged for you, never decided for you:
 
 ## Locale packs
 
-Phone rules, currency words and month names come from a country pack, chosen with `--locale`:
+Phone rules, currency words and month names come from a country pack, chosen with `--locale` (or the "Country" dropdown in the window):
 
 | Locale | Country | Phones | Prices read |
 |---|---|---|---|
