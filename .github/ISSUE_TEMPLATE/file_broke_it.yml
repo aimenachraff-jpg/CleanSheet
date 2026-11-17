@@ -1,0 +1,39 @@
+name: My file broke it
+description: The tool cleaned a file wrongly, crashed, or flagged things it should have handled
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please do not upload a file with real names, phones or orders in it.
+        Replace them with fictional values first: keep the shapes and formats
+        (how the dates, prices and phone numbers are written) because that is
+        what matters for the bug.
+  - type: textarea
+    id: what
+    attributes:
+      label: What went wrong
+      description: What the tool did, and what you expected instead.
+      placeholder: The phone column came out orange for every row.
+  - type: dropdown
+    id: locale
+    attributes:
+      label: Which locale were you using?
+      options: ["dz", "ma", "tn", "eg", "fr", "generic"]
+    validations:
+      required: true
+  - type: dropdown
+    id: how
+    attributes:
+      label: How did you run it?
+      options: ["Windows exe", "pip install cleansheet", "python clean_sheet.py", "GUI (python clean_sheet_gui.py)"]
+  - type: textarea
+    id: sample
+    attributes:
+      label: Sample
+      description: Attach a fictional .xlsx or .csv that shows the problem, or paste a few example cells with the column header.
+  - type: textarea
+    id: version
+    attributes:
+      label: Version
+      description: Release version or pip version (see the Summary sheet or pip show cleansheet).
