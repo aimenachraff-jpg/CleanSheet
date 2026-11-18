@@ -1,5 +1,7 @@
 # CleanSheet
 
+![CleanSheet icon](icon.png)
+
 [![tests](https://github.com/aimenachraff-jpg/CleanSheet/actions/workflows/tests.yml/badge.svg)](https://github.com/aimenachraff-jpg/CleanSheet/actions/workflows/tests.yml)
 [![PyPI](https://img.shields.io/pypi/v/cleansheet)](https://pypi.org/project/cleansheet/)
 
@@ -7,7 +9,7 @@
 
 Cleans messy Excel and CSV files: extra spaces, inconsistent capitalization, exact duplicates, mixed price and date formats, numbers written as words, Arabic-Indic digits, country phone formats. You get the cleaned file, a log of every change, and a list of the values the tool could not decide on.
 
-It is rule-based code, not AI. It never guesses: anything ambiguous is flagged in the output for you to decide. Your original file is never modified, and nothing leaves your computer.
+It is rule-based code. It never guesses: anything ambiguous is flagged in the output for you to decide. Your original file is never modified, and nothing leaves your computer.
 
 Built with real sales data in mind: columns named in French, English or Arabic, files where the table does not start at A1, two-level headers, "Total" rows at the bottom, prices like `1 450 DA`, `1 250 DH` or `دج`, dates like `جانفي 2026` or `غشت 2026`.
 
