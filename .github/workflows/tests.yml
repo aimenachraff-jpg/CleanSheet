@@ -13,13 +13,13 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install openpyxl
-      - run: |
-          python test_clean_sheet.py
-          python test_table_detection.py
-          python test_multilevel.py
-          python test_gui_logic.py
-          python test_locale_packs.py
-          python test_csv_encoding.py
-          python test_gui_locale.py
-          python test_gui_thread.py
-          python test_reliability.py
+      - run: sudo apt-get update && sudo apt-get install -y xvfb
+      - run: xvfb-run -a python test_clean_sheet.py
+      - run: xvfb-run -a python test_table_detection.py
+      - run: xvfb-run -a python test_multilevel.py
+      - run: xvfb-run -a python test_gui_logic.py
+      - run: xvfb-run -a python test_locale_packs.py
+      - run: xvfb-run -a python test_csv_encoding.py
+      - run: xvfb-run -a python test_gui_locale.py
+      - run: xvfb-run -a python test_gui_thread.py
+      - run: xvfb-run -a python test_reliability.py
