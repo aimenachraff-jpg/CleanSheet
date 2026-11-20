@@ -90,8 +90,9 @@ The banner is also used as the README header image.
 | 4 | GitHub Discussions | Enabled | ✅ Done via Edge |
 | 5 | Social preview image | `docs/assets/banner.png` (1600×440, artificial simple design) | ✅ Uploaded via Edge |
 | 6 | GitHub release for v1.2.0 | Optional. PyPI package is already live; a GitHub release would surface the exe/assets. | ⏳ Optional, not done |
+| 7 | CI fix: xvfb for GUI tests | `.github/workflows/tests.yml` — runs all test files under `xvfb-run -a` on headless Ubuntu so `test_gui_thread.py` (tkinter window) doesn't fail with `$TclError: no display name`. | ✅ Pushed as commit 46da190 |
 
-Working tree: clean. `main` is in sync with `origin/main`.
+Working tree: clean. `main` is in sync with `origin/main`. All 88 tests pass in CI (green on commit 46da190).
 ---
 
 ## 5. Recommendations considered but not implemented
@@ -100,7 +101,7 @@ Working tree: clean. `main` is in sync with `origin/main`.
 |---|---|
 | Add a lint/format GitHub Actions workflow | The project has no linter/formatter configured. Adding one would require adding config (ruff/black etc.) which is an application-configuration change, outside scope. The existing `tests.yml` CI is real and badge-able. |
 | Add Dependabot | Low-risk and beneficial, but Dependabot on `openpyxl` only (one dependency) adds noise for minimal gain. Can be added later as a single `dependabot.yml` if desired. |
-| Social preview badge linking to the image | No image exists yet (generation failed, section 3). Adding a broken-image badge would mislead. |
+| Add Dependabot | Low-risk and beneficial, but Dependabot on `openpyxl` only (one dependency) adds noise for minimal gain. Can be added later as a single `dependabot.yml` if desired. |
 | CITATION.cff / AGENTS.md | Present in EDN-S but not justified for CleanSheet's scope; adding them is documentation scope creep. Revisit if the project grows. |
 | Move images into `docs/assets/` | Images (`icon.png`, `app.png`, `cleaned.png`, `demo.gif`) live at repo root and are referenced correctly. Moving them would break existing relative links and require updating every reference — churn with no presentation gain. |
 | Claim benchmarks, speed, or "production-ready" language | Would be invented claims. The README states only what is verifiable (88 tests, CI on every push, rule-based, offline). |
@@ -113,14 +114,11 @@ Working tree: clean. `main` is in sync with `origin/main`.
 - `pyproject.toml` — untouched (version already 1.2.0)
 - `test_*.py` — untouched
 - `requirements.txt`, `build_exe.bat`, `start_CleanSheet.bat` — untouched
-- `.github/workflows/tests.yml` — untouched (existing CI, kept as-is)
 - `.github/ISSUE_TEMPLATE/file_broke_it.yml` — untouched (already good; a PR template was considered but not added to keep scope minimal)
 
 ---
 
 ## Next steps (your call)
 
-1. **Approve the push** — I'll commit the README changes (already done locally) and push to `origin/master`.
-2. **GitHub settings** — confirm you want me to apply description, topics, social preview (once image exists), and Discussions, or you'll do them in the UI.
-3. **Social preview image** — top up OpenCode credits for me to generate it, or produce it from the spec in section 3.
-4. **GitHub release** — optional; PyPI v1.2.0 is already live.
+1. **Optional GitHub release** — PyPI v1.2.0 is already live; a GitHub release would surface the exe/assets if you want one.
+2. **Optional Dependabot** — low value for a single-dependency project (`openpyxl`); skip unless desired.
