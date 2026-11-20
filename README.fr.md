@@ -46,6 +46,14 @@ Laisssé à votre décision : dates ambiguës comme `02/09/2026`, nombres ambigu
 
 Le dépôt contient des fichiers fictifs pour essayer : `sample_messy_arabic.xlsx` (en-têtes arabes), `sample_messy_moroccan.xlsx` (en-têtes français, formats marocains), `sample_messy_sales.xlsx` (anglais).
 
+## Documentation complémentaire
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) — comment contribuer, ajouter un pays, signaler un fichier problématique
+- [CHANGELOG.md](CHANGELOG.md) — historique des versions
+- [PRIVACY.md](PRIVACY.md) — hors ligne, local uniquement ; aucune télémétrie ni cloud
+- [SECURITY.md](SECURITY.md) — politique de dépendances et traitement des données
+- [ROADMAP.md](ROADMAP.md) — travaux prévus et hors périmètre
+
 ## Licence
 
 MIT. Voir [LICENSE](LICENSE). Si l'outil gère mal un de vos fichiers, ouvrez une issue avec un échantillon fictif. Les contributions sont bienvenues : [CONTRIBUTING.md](CONTRIBUTING.md).

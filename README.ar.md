@@ -48,6 +48,14 @@ cleansheet-gui
 
 في المستودع ملفات وهمية جاهزة للتجربة: `sample_messy_arabic.xlsx` (عناوين عربية)، `sample_messy_moroccan.xlsx` (عناوين فرنسية بصيغ مغربية)، `sample_messy_sales.xlsx` (إنجليزية).
 
+## توثيق إضافي
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) — كيف تساهم، أو تضيف حزمة بلد، أو تبلغ عن مشكلة في ملف
+- [CHANGELOG.md](CHANGELOG.md) — تاريخ الإصدارات
+- [PRIVACY.md](PRIVACY.md) — العمل دون إنترنت، البيانات لا تغادر جهازك، لا استخبارات ولا سحابة
+- [SECURITY.md](SECURITY.md) — سياسة التبعيات ومعالجة البيانات
+- [ROADMAP.md](ROADMAP.md) — ما مخطط له وما خارج النطاق
+
 ## الترخيص
 
 MIT. انظر [LICENSE](LICENSE). لو أفسدت الأداة أحد ملفاتك، افتح مشكلة (issue) مع نموذج وهمي من الملف — وجود مساهمين مرحّب بهم، انظر [CONTRIBUTING.md](CONTRIBUTING.md).

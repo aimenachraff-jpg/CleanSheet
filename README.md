@@ -134,6 +134,15 @@ Edit `client.json` (types: `id`, `name`, `category`, `qty`, `price`, `date`, `ph
 - No scans or PDFs, no formulas or dashboards, no merging files with different layouts.
 - It does not invent values: what it cannot read stays unreadable, in orange.
 - Tested on synthetic files. If it mishandles your file, please open an issue with a sample.
+- Excel `.xlsm` macros are not preserved by the Excel library; macro files are flagged rather than silently stripped.
+
+## Documentation
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) — how to contribute, add a locale, or report a broken file
+- [CHANGELOG.md](CHANGELOG.md) — release history
+- [PRIVACY.md](PRIVACY.md) — offline, local-only data handling; no telemetry or cloud
+- [SECURITY.md](SECURITY.md) — dependency policy and data handling
+- [ROADMAP.md](ROADMAP.md) — planned and out-of-scope work
 
 ## Tests
 

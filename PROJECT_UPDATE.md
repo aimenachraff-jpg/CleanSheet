@@ -31,14 +31,44 @@
   - A4 background-thread GUI cleaning + indeterminate progress + status label (fixes H3 GUI freeze)
   - A5 refuse to overwrite existing *_cleaned.xlsx unless --force (fixes M4 silent overwrite)
 
+## Completed tasks
+- Phase B reliability & testing COMPLETE:
+  - test_reliability.py: currency tokens per locale, dates (two-digit years, Arabic months), phones, missing values, distinct-names-not-merged, first-duplicate-kept, input-file untouched (sha256), output reproducibility, config round-trip, large 5000-row file, malformed tiny CSV
+  - CI workflow + CONTRIBUTING.md + README.md updated to run all test files
+  - Total: 83 tests, all green
+
+## Completed tasks
+- Phase C GUI improvements COMPLETE:
+  - C5 friendly CLI errors (missing/unreadable file → "Cleaning failed: ...", exit 1, no traceback) + test
+  - C1 modern professional ttk interface (accent color #1F3A5F matching workbook header, themed buttons)
+  - C2 spreadsheet preview before cleaning (read-only first-rows preview under column table)
+  - C3 review counts surfaced in result label (Review sheet in opened workbook)
+  - C4 optional drag-and-drop via tkinterdnd2 (guarded import; never a hard dependency; falls back to file picker)
+
+## Completed tasks
+- Phase D product features COMPLETE:
+  - D1 batch processing multiple files (CLI accepts multiple inputs, per-file continue-on-error, exit code reflects failures)
+  - D2 reusable cleaning configurations (CLI --write-config/--config round-trip already existed and is tested; GUI writes *_used_config.json including locale)
+  - D3 customizable duplicate detection (dedup_keys config; whole-row by default)
+  - D4 dry-run mode (--dry-run reports what would change, writes nothing)
+  - D5 exportable audit log (--export-log writes *_audit.csv change log)
+
+## Completed tasks
+- Phase E docs/distribution COMPLETE:
+  - PRIVACY.md — offline, local-only; no telemetry/cloud/accounts; original never modified; flag-not-guess
+  - SECURITY.md — single dependency (openpyxl), no secrets, no customer data to external services, .xlsm macro note
+  - ROADMAP.md — completed, in progress, under consideration, explicitly out-of-scope (no AI/telemetry/cloud/paid)
+  - README.md / README.ar.md / README.fr.md — documentation links + .xlsm macro limitation
+  - docs/landing-page-spec.md — landing-page spec (free, MIT, no pricing/telemetry/cloud/accounts/AI)
+  - 88 tests, all green
+
 ## In progress
-- Phase B reliability & testing expansion
+- Final validation: full suite re-run + verification loop before considering the work complete
 
 ## Next steps
-- Phase B: expanded test suite (encoding edge cases already in test_csv_encoding.py; add ambiguous duplicates, dates/decimals/currencies/phones/missing values, malformed/large files, original-untouched, reproducibility)
-- Phase C GUI improvements (modern look, spreadsheet preview, review-surfacing, drag-and-drop optional)
-- Phase D features (batch, reusable config, dedup keys, dry-run, audit log)
-- Phase E docs/distribution (PRIVACY.md, SECURITY.md, ROADMAP.md, README updates, landing-page spec)
+- Final full test run across all 9 test files
+- Consider whether any remaining audit findings (M1 workbook properties, M3 global MONTHS, L1 60-row scan) warrant follow-up fixes
+- No push to GitHub without user authorization
 
 ## Known limitations (pre-existing, documented in README)
 - Reads the first table on the chosen sheet only
