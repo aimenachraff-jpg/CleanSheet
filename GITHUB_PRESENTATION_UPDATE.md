@@ -67,17 +67,11 @@ Each topic maps to something real in the repo:
 
 ## 3. Social preview asset
 
-I attempted to generate a 1200×630 social preview image via OpenCode's image tool. **It failed** — the OpenCode image provider returned "Insufficient balance" (pay-as-you-go credits required). The request was not charged and no file was created.
+Generated via Pillow code (`tools/make_banner.py`) at `docs/assets/banner.png` (1600×440). Artificial, simple design: flat white background, teal accent bar, abstract spreadsheet grid motif, "CleanSheet" title, tagline, and metadata chips (MIT, 88 tests, Python 3.8+, Windows exe). No fake application UI, no realistic data, no people.
 
-**Recommendation:** Create `docs/assets/social-preview.png` (1200×630) with:
-- White/very light gray background
-- Centered bold text: "CleanSheet"
-- Tagline: "Clean messy Excel & CSV files offline — rule-based, never guesses. Arabic • French • English"
-- One accent color (deep blue/teal), flat vector style, no shadows, no fake application UI, no fake screenshots, no realistic data
+Uploaded to GitHub as the repository social preview image via Edge (Settings → General → Social preview → Edit → Upload an image). GitHub auto-saves on upload — no separate save step required.
 
-Then reference it in the repository settings (social preview) and optionally in the README header. Until the image exists, I have **not** added a social-preview badge or image reference to the README to avoid a broken link.
-
-If you top up OpenCode image credits, I can regenerate it. Otherwise you or a designer can produce it from the spec above.
+The banner is also used as the README header image.
 
 ---
 
@@ -94,11 +88,10 @@ If you top up OpenCode image credits, I can regenerate it. Otherwise you or a de
 | 2 | GitHub topics | Existing 20 topics retained: algeria, arabic, csv, data-cleaning, data-quality, egypt, excel, french, gui, mena, morocco, no-ai, offline, openpyxl, pandas-alternative, python, rtl, spreadsheet, tunisia, xlsx | ✅ Already comprehensive (covers all recommended + more). Could not add `offline-first` / `desktop-application` — GitHub enforces a 20-topic limit and the repo is already at 20. |
 | 3 | Website URL | None (no standalone project website; the GitHub repo is the canonical home) | ✅ N/A |
 | 4 | GitHub Discussions | Enabled | ✅ Done via Edge |
-| 5 | Social preview image | Blocked — image generation failed (insufficient OpenCode image credits, section 3). Spec is there; produce `docs/assets/social-preview.png` (1200×630) then upload in Settings → General. | ⏳ Blocked |
+| 5 | Social preview image | `docs/assets/banner.png` (1600×440, artificial simple design) | ✅ Uploaded via Edge |
 | 6 | GitHub release for v1.2.0 | Optional. PyPI package is already live; a GitHub release would surface the exe/assets. | ⏳ Optional, not done |
 
 Working tree: clean. `main` is in sync with `origin/main`.
-
 ---
 
 ## 5. Recommendations considered but not implemented
