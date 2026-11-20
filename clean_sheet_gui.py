@@ -122,13 +122,15 @@ class App((TkinterDnD.Tk if HAS_DND else tk.Tk)):
         self.canvas.pack(side="left", fill="both", expand=True); sb.pack(side="right", fill="y")
         self.canvas.bind_all("<MouseWheel>", lambda e: self.canvas.yview_scroll(int(-e.delta / 120), "units"))
 
-        opt = ttk.Frame(root); opt.grid(row=6, column=0, sticky="ew", pady=(4, 2))
+        opts = ttk.Frame(root); opts.grid(row=6, column=0, sticky="ew", pady=(4, 2))
+        opt = ttk.Frame(opts); opt.pack(anchor="w")
         ttk.Label(opt, text="Ambiguous dates like 03/04/2026:").pack(side="left")
         self.date_var = tk.StringVar(value=list(DATE_CHOICES)[0])
         ttk.Combobox(opt, textvariable=self.date_var, values=list(DATE_CHOICES), state="readonly", width=26).pack(side="left", padx=6)
         ttk.Label(opt, text="  Country/locale:").pack(side="left", padx=(14, 0))
-        self.locale_var = tk.StringVar(value=LOCALE_DEFAULT)
-        ttk.Combobox(opt, textvariable=self.locale_var, values=[f"{k} - {DESCRIPTIONS[k]}" for k in LOCALE_CHOICES],
+        self.locale_var = tk.StringVar(value=f"{LOCALE_DEFAULT} - {DESCRIPTIONS[LOCALE_DEFAULT]}")
+        ttk.Combobox(opt, textvariable=self.locale_var,
+                     values=[f"{k} - {DESCRIPTIONS[k]}" for k in LOCALE_CHOICES],
                      state="readonly", width=34).pack(side="left", padx=6)
         self.csv_var = tk.BooleanVar(value=False); ttk.Checkbutton(opt, text="Also save a CSV copy", variable=self.csv_var).pack(side="left", padx=14)
         out = ttk.Frame(root); out.grid(row=7, column=0, sticky="ew", pady=4); out.columnconfigure(1, weight=1)
