@@ -19,7 +19,9 @@
 أو بالبايثون (أي نظام):
 
 ```
-pip install cleansheet
+pip install cleansheet==1.2.0
+# or upgrade an existing install:
+pip install --upgrade cleansheet
 cleansheet file.xlsx
 cleansheet file.xlsx --locale ma
 cleansheet-gui

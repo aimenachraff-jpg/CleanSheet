@@ -4,78 +4,38 @@
 
 [![tests](https://github.com/aimenachraff-jpg/CleanSheet/actions/workflows/tests.yml/badge.svg)](https://github.com/aimenachraff-jpg/CleanSheet/actions/workflows/tests.yml)
 [![PyPI](https://img.shields.io/pypi/v/cleansheet)](https://pypi.org/project/cleansheet/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/)
+[![Latest release](https://img.shields.io/github/release/aimenachraff-jpg/CleanSheet.svg)](https://github.com/aimenachraff-jpg/CleanSheet/releases/latest)
 
-![Demo: the app loads an Arabic file and guesses the columns, the Clean sheet flags the ambiguous date in yellow, the Review sheet explains what to check](demo.gif)
+![Demo: the app loads an Arabic file, guesses the columns, flags the ambiguous date in yellow on the Clean sheet, and lists what to check on the Review sheet](demo.gif)
 
-Cleans messy Excel and CSV files: extra spaces, inconsistent capitalization, exact duplicates, mixed price and date formats, numbers written as words, Arabic-Indic digits, country phone formats. You get the cleaned file, a log of every change, and a list of the values the tool could not decide on.
+**CleanSheet cleans messy Excel and CSV files offline.** It fixes extra spaces, inconsistent casing, exact duplicates, mixed price and date formats, numbers written as words, Arabic-Indic digits, and country phone formats. You get the cleaned file, a change log of every edit, and a list of the values the tool could not decide on — flagged for you, never guessed.
 
-It is rule-based code. It never guesses: anything ambiguous is flagged in the output for you to decide. Your original file is never modified, and nothing leaves your computer.
+It is rule-based code, not AI. Anything ambiguous is highlighted for your decision. Your original file is never modified, and nothing leaves your computer.
 
-Built with real sales data in mind: columns named in French, English or Arabic, files where the table does not start at A1, two-level headers, "Total" rows at the bottom, prices like `1 450 DA`, `1 250 DH` or `دج`, dates like `جانفي 2026` or `غشت 2026`.
+[中文] [العربية] [français]
 
-![The CleanSheet window: pick a file, check the guessed column types, click Clean](app.png)
+---
 
-<!-- Demo GIF (10-15s, messy file -> Clean -> yellow/orange review cells) goes here. -->
+## What it cleans
 
-## Quick start
-
-```
-# Windows, no Python needed: download the exe from Releases, extract, run CleanSheet.exe
-# Python, any OS:
-pip install cleansheet
-cleansheet file.xlsx            # cleans file.xlsx, writes file_cleaned.xlsx
-cleansheet file.xlsx --locale ma
-cleansheet-gui                  # windowed app
-```
-
-More in [README.ar.md](README.ar.md) (العربية) and [README.fr.md](README.fr.md) (français).
-
-## How it works
-
-1. Open the app and pick a `.xlsx` or `.csv` file.
-2. The tool finds the table (even below title rows or notes), guesses each column's type from its header, and shows you the guess to confirm or fix.
-3. Click Clean. You get a new workbook in a `cleaned_output` folder next to your file, with five sheets:
-
-| Sheet | What it holds |
+| Problem | How CleanSheet handles it |
 |---|---|
-| Clean | The cleaned data. Yellow = changed with an assumption, check it. Orange = unreadable or missing, original kept. |
-| Review | Every yellow and orange cell with a note. Go through it before you use the file. |
-| Change log | Every change, before and after. |
-| Before-After | First 20 rows side by side. |
-| Summary | Counts, plus the rules that were applied. |
+| Extra spaces, inconsistent casing | Normalized; every change logged |
+| Exact duplicate rows | Removed (customizable via `dedup_keys`) |
+| Mixed price formats | `1 450 DA`, `1 250 DH`, `دج`, `12,5 DT`, `جنيه`, … |
+| Numbers written as words | `dix`, `ثلاثة`, `cinq` → digits |
+| Arabic-Indic / Persian digits | `٠١٢٣`, `۰۱۲۳` → `0123` |
+| Mixed date formats | `3 septembre 2026`, `2026-09-03`, جانفي, غشت |
+| Phone numbers | +213, +212, +216, +20, +33 — per country pack |
+| Ambiguous values | Flagged yellow/orange for you to decide, never guessed |
+| Two-level headers | Joined as `Produit1 - Qté` |
+| "Total" rows | Copied to a Skipped rows sheet (optional) |
 
-![The Clean sheet: yellow = changed with an assumption, orange = unreadable or missing, original kept](cleaned.png)
+## Supported locales
 
-Rows that look like totals ("Total", "Somme", "المجموع") are not cleaned as data; they are copied to a Skipped rows sheet. You can keep them in with one checkbox.
-
-## Why not just use pandas, OpenRefine or Excel?
-
-- **It runs offline and needs no skills.** A shop manager or accountant double-clicks the exe. pandas needs Python, a terminal and a script per file layout.
-- **It never guesses.** pandas and Excel fix-converts silently: `02/09/2026` becomes September 2 without telling you. CleanSheet marks every assumption in yellow and leaves the call to you.
-- **It knows the formats the big tools ignore.** `1 450 DA`, `1.250,50 درهم`, جانفي and غشت month names, `٠١٢٣` digits, 8-digit Tunisian phones. Out of the box, with a change log.
-
-## What it fixes and what it does not
-
-Fixed automatically (each one logged):
-
-- Extra spaces, upper/lower case of the same name or city
-- Number words like "dix" or "ثلاثة", price formats like `1 450 DA` or `1 250 DH`
-- Clear dates like `3 septembre 2026` or `2026-09-03`; Arabic month names (Maghrebi, standard, Levantine) are understood
-- Phone formats (+213, +212, +216, +20, +33), Arabic-Indic (٠١٢٣) and Persian (۰۱۲۳) digits
-- Exact duplicate rows
-- Typos in headers ("mongtant" → the montant column), two-level headers joined as `Produit1 - Qté`
-
-Flagged for you, never decided for you:
-
-- Ambiguous dates like `02/09/2026` (day-first or month-first; you pick the default, the tool marks them)
-- Ambiguous numbers like `1,450` (1.45 or 1450)
-- Unreadable or missing values: kept as they were, never filled in
-- Names that differ only by hamza or diacritics (أحمد / احمد): flagged for review, never merged
-- Synonyms across languages ("Thon" and "Tuna"): not merged, not flagged. Real synonyms need a human.
-
-## Locale packs
-
-Phone rules, currency words and month names come from a country pack, chosen with `--locale`:
+Phone rules, currency words, and month names come from a country pack chosen with `--locale`:
 
 | Locale | Country | Phones | Prices read |
 |---|---|---|---|
@@ -86,13 +46,33 @@ Phone rules, currency words and month names come from a country pack, chosen wit
 | `fr` | France | +33, 9 digits | `1 250 €` |
 | `generic` | anywhere | length check only | common currency symbols |
 
-The default is `dz` (where the project started). See [CONTRIBUTING.md](CONTRIBUTING.md) to add a country; the pack file is a few lines. Sample files: `sample_messy_arabic.xlsx` (Arabic headers, Algerian formats), `sample_messy_moroccan.xlsx` (French headers, Moroccan formats), `sample_messy_sales.xlsx` (English).
+More in [README.ar.md](README.ar.md) (العربية) and [README.fr.md](README.fr.md) (français).
 
-## Getting it running
+---
 
-The easiest way, no Python needed: download [CleanSheet-1.0.0-windows.zip](https://github.com/aimenachraff-jpg/CleanSheet/releases/latest) from the Releases page, extract it, and run `CleanSheet.exe` from the extracted `CleanSheet` folder (Windows 10 or 11, 64-bit). Windows will show a SmartScreen warning because the exe is not signed; click More info, then Run anyway.
+## What you get
 
-From Python:
+Running CleanSheet on a file produces a cleaned workbook with five sheets:
+
+| Sheet | What it holds |
+|---|---|
+| **Clean** | The cleaned data. Yellow = changed with an assumption, check it. Orange = unreadable or missing, original kept. |
+| **Review** | Every yellow and orange cell with a note. Go through it before you use the file. |
+| **Change log** | Every change, before and after. |
+| **Before-After** | First 20 rows side by side. |
+| **Summary** | Counts, plus the rules that were applied. |
+
+![The Clean sheet: yellow = changed with an assumption, orange = unreadable or missing, original kept](cleaned.png)
+
+---
+
+## Installation
+
+### Windows, no Python needed
+
+Download [CleanSheet-1.0.0-windows.zip](https://github.com/aimenachraff-jpg/CleanSheet/releases/latest) from the [Releases page](https://github.com/aimenachraff-jpg/CleanSheet/releases), extract it, and run `CleanSheet.exe` from the extracted `CleanSheet` folder (Windows 10 or 11, 64-bit). Windows will show a SmartScreen warning because the exe is not signed; click **More info**, then **Run anyway**.
+
+### From Python (any OS)
 
 ```
 pip install cleansheet==1.2.0
@@ -100,51 +80,147 @@ pip install cleansheet==1.2.0
 pip install --upgrade cleansheet
 ```
 
-Command line:
+This installs two commands:
 
 ```
-cleansheet client.xlsx --out-dir out/
-# or from source: python clean_sheet.py client.xlsx
+cleansheet file.xlsx            # command-line cleaner
+cleansheet-gui                  # windowed app
 ```
 
-Windowed app (pick the file, confirm the column types, click Clean):
+Or from source:
+
+```
+git clone https://github.com/aimenachraff-jpg/CleanSheet.git
+cd CleanSheet
+pip install openpyxl
+python clean_sheet.py file.xlsx      # CLI
+python clean_sheet_gui.py            # GUI
+```
+
+openpyxl is the only runtime dependency; everything else is Python standard library. `requires-python >= 3.8`.
+
+---
+
+## Quick start
+
+### Command line
+
+```
+cleansheet client.xlsx                      # writes client_cleaned.xlsx
+cleansheet client.xlsx --locale ma          # Moroccan phone/price rules
+cleansheet client.xlsx --out-dir out/       # put output in out/
+cleansheet client.xlsx --dry-run            # report what would change, no output file
+cleansheet client.xlsx --export-log         # also write client_audit.csv change log
+cleansheet file1.xlsx file2.xlsx --locale dz   # batch: clean multiple files
+cleansheet client.xlsx --force              # overwrite an existing *_cleaned.xlsx
+cleansheet client.xlsx --write-config cfg.json  # save detected column mapping to edit
+cleansheet client.xlsx --config cfg.json  # use your saved column mapping
+```
+
+### Windowed app
 
 ```
 cleansheet-gui
-# or from source: python clean_sheet_gui.py
+# or from source:
+python clean_sheet_gui.py
 ```
 
-On Windows you can just double-click `start_CleanSheet.bat`.
+Pick a file, confirm the column types the tool guesses, click Clean. On Windows you can also double-click `start_CleanSheet.bat`.
 
-### Building a standalone .exe
+---
 
-Double-click `build_exe.bat` (it downloads PyInstaller once). The result is `dist\CleanSheet\CleanSheet.exe`; keep the whole `CleanSheet` folder together and make a shortcut to the exe. Windows will show a SmartScreen warning for an unsigned exe you built yourself; that is expected.
+## How it works
 
-### Column types
+1. **Pick a `.xlsx` or `.csv` file.** The GUI shows it; the CLI takes it as an argument.
+2. **The tool finds the table** — even if it starts below title rows or notes. It guesses each column's type from its header (phone, date, email, price with DA/دج/DH, plain number, text, skip) and shows you the guess to confirm or fix.
+3. **Click Clean.** CleanSheet writes a new workbook next to your file with the five sheets above. Yellow cells are changes to review; orange cells are values it could not read, kept as-is.
+4. **Review before you use it.** The Review sheet lists every flagged cell with a note. Nothing is silently filled in.
 
-`clean_sheet.py` guesses column types from the header and, when the name gives no clue, from the values (phone, date, email, price with DA/دج/DH, plain numbers). To override the guess:
+---
+
+## Python API
+
+CleanSheet exposes a small function-based API (no classes required):
+
+```python
+from clean_sheet import run
+
+result = run(
+    "client.xlsx",
+    locale="ma",        # country pack (default "dz")
+    out_dir="out/",     # where to write output
+    dry_run=False,      # set True to report changes without writing
+    export_log=True,    # write a *_audit.csv change log next to output
+    force=False,        # set True to overwrite an existing *_cleaned.xlsx
+)
+print(result["rows_in"], "rows in ->", result["rows_out"], "rows out")
+print(result["log"])    # every change, before/after/status/note
+```
+
+`run()` returns a dict with `xlsx`, `report`, `rows_in`, `rows_out`, `removed`, `log`, `cells`, `keep`, `headers`, `cfg`, and `info`. The original input file is never modified.
+
+Lower-level: `clean_table(headers, rows, cfg)` cleans an already-parsed table and returns the same result shape, useful if you want to pre-process rows yourself.
+
+The CLI entry point is `clean_sheet.main(argv=None)`; the GUI entry point is `clean_sheet_gui.main()`.
+
+---
+
+## Example: before → after
+
+The repo includes fictional sample files so you can try it without your own data:
+
+- `sample_messy_sales.xlsx` — English headers, mixed formats
+- `sample_messy_arabic.xlsx` — Arabic headers, Algerian formats
+- `sample_messy_moroccan.xlsx` — French headers, Moroccan formats
+
+Each has a matching `*_cleaned.xlsx` showing the expected output. Run:
 
 ```
-python clean_sheet.py client.xlsx --write-config client.json
+cleansheet sample_messy_sales.xlsx --locale dz --out-dir try/
 ```
 
-Edit `client.json` (types: `id`, `name`, `category`, `qty`, `price`, `date`, `phone`, `email`, `text`, `skip`), then rerun with `--config client.json`. Two example configs are in the repo: `config_sales_demo.json` and `config_client_style.json` (French headers). Other options: `--sheet NAME`, `--header-row N`, `--levels 1`, `--keep-total-rows`, `--also-csv`. A `--config` file always wins over the locale pack.
+then open `try/sample_messy_sales_cleaned.xlsx` and check the **Review** sheet.
 
-## Limitations
+---
 
-- Reads the first table on the chosen sheet only.
+## What it does not do
+
+- Reads only the first table on the chosen sheet.
 - No scans or PDFs, no formulas or dashboards, no merging files with different layouts.
 - It does not invent values: what it cannot read stays unreadable, in orange.
-- Tested on synthetic files. If it mishandles your file, please open an issue with a sample.
 - Excel `.xlsm` macros are not preserved by the Excel library; macro files are flagged rather than silently stripped.
+- Tested on synthetic (fictional) files. If it mishandles your file, open an issue with a fictional sample (see CONTRIBUTING.md).
+
+---
+
+## Privacy & offline processing
+
+CleanSheet runs entirely on your computer. No telemetry, no cloud, no accounts, no paid service. Nothing is uploaded. See [PRIVACY.md](PRIVACY.md) and [SECURITY.md](SECURITY.md).
+
+---
+
+## Contributing
+
+Bug reports, locale packs, and new column types are welcome. Every change gets a test, and the suite runs on every push.
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) — how to contribute, add a country locale, or report a broken file
+- `.github/ISSUE_TEMPLATE/file_broke_it.yml` — use this template when a file is cleaned incorrectly
+
+Keep the README honest: if you add a flag or a locale, document it in the same plain style.
+
+---
 
 ## Documentation
 
-- [CONTRIBUTING.md](CONTRIBUTING.md) — how to contribute, add a locale, or report a broken file
 - [CHANGELOG.md](CHANGELOG.md) — release history
-- [PRIVACY.md](PRIVACY.md) — offline, local-only data handling; no telemetry or cloud
+- [CONTRIBUTING.md](CONTRIBUTING.md) — how to contribute
+- [PRIVACY.md](PRIVACY.md) — offline, local-only data handling
 - [SECURITY.md](SECURITY.md) — dependency policy and data handling
 - [ROADMAP.md](ROADMAP.md) — planned and out-of-scope work
+- [README.ar.md](README.ar.md) — Arabic
+- [README.fr.md](README.fr.md) — French
+
+---
 
 ## Tests
 
@@ -160,8 +236,14 @@ python test_gui_thread.py
 python test_reliability.py
 ```
 
-88 tests cover the cleaning rules, table and header detection, the GUI logic, the locale packs, CSV encoding edge cases, GUI locale/threading, and reliability (original-file-untouched, reproducibility, large files, batch, dry-run, audit log, dedup keys).
+88 tests across 9 files cover the cleaning rules, table and header detection, GUI logic, locale packs, CSV encoding edge cases, GUI locale/threading, and reliability (original-file-untouched, reproducibility, large files, batch, dry-run, audit log, dedup keys). All run in CI on every push.
+
+---
 
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+---
+
+*Built with real sales data in mind: columns named in French, English or Arabic, prices like `1 450 DA` or `1 250 DH`, dates like `جانفي 2026` or `غشت 2026`. Rule-based, offline, and honest about what it cannot decide.*

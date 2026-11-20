@@ -17,7 +17,9 @@ Windows sans Python : téléchargez le zip sur la page [Releases](https://github
 Avec Python (tous systèmes) :
 
 ```
-pip install cleansheet
+pip install cleansheet==1.2.0
+# or upgrade an existing install:
+pip install --upgrade cleansheet
 cleansheet fichier.xlsx
 cleansheet fichier.xlsx --locale ma
 cleansheet-gui
