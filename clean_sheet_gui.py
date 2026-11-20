@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 """CleanSheet - a simple window around clean_sheet.py (no command line needed).
 Pick a file, check the detected table and column types, click Clean. Your original file is never modified."""
-import json, os, subprocess, sys, traceback
+import json, os, queue, subprocess, sys, threading, traceback
 from collections import Counter
 from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
 import clean_sheet as cs
+from clean_sheet_locales import DESCRIPTIONS
 
 DATE_CHOICES = {"Day first (31/12/2026)": "dmy", "Month first (12/31/2026)": "mdy"}
+LOCALE_CHOICES = list(DESCRIPTIONS)  # locale codes, shown by description
+LOCALE_DEFAULT = "dz"
 TYPE_LABELS = {  # friendly names shown in the window -> internal type
     "Name": "name", "Category (city, product...)": "category", "Quantity": "qty", "Price / amount": "price", "Number (score, grade...)": "number",
     "Date": "date", "Phone": "phone", "Email": "email", "ID / reference": "id", "Other text": "text", "Leave untouched": "skip"}
@@ -34,14 +37,15 @@ def inspect_file(path, sheet=None, header_row=None, levels=None, skip_totals=Tru
             "levels": info["levels"], "warnings": info["warnings"], "skipped": len(info["skipped"])}
 
 
-def run_job(path, columns, date_order="dmy", out_dir=None, also_csv=False, sheet=None, header_row=None, levels=None, skip_totals=True):
+def run_job(path, columns, date_order="dmy", out_dir=None, also_csv=False, sheet=None, header_row=None, levels=None, skip_totals=True, locale=LOCALE_DEFAULT):
     """Run the cleaner with an explicit column mapping. Writes the config used next to the output."""
     path = Path(path)
     out = Path(out_dir) if out_dir else path.parent / "cleaned_output"
     out.mkdir(parents=True, exist_ok=True)
     cfg_path = out / f"{path.stem}_used_config.json"
-    cfg_path.write_text(json.dumps({"columns": columns, "date_order": date_order}, indent=2, ensure_ascii=False), encoding="utf-8")
-    r = cs.run(path, cfg_path, out, sheet, header_row, also_csv, None, levels, skip_totals)
+    cfg_path.write_text(json.dumps({"columns": columns, "date_order": date_order, "locale": locale}, indent=2, ensure_ascii=False), encoding="utf-8")
+    locale_code = locale.split(" - ", 1)[0] if " - " in locale else locale
+    r = cs.run(path, cfg_path, out, sheet, header_row, also_csv, None, levels, skip_totals, locale=locale_code)
     c = Counter(l["status"] for l in r["log"])
     return {"xlsx": r["xlsx"], "report": r["report"], "out": out, "rows_in": r["rows_in"], "rows_out": r["rows_out"],
             "removed": r["removed"], "verify": c["VERIFY"], "unresolved": c["UNRESOLVED"], "missing": c["MISSING"], "note": r["info"]["note"], "skipped": len(r["info"]["skipped"]), "warnings": r["info"]["warnings"]}
@@ -65,6 +69,7 @@ class App(tk.Tk):
         st.configure(".", font=base); st.configure("H.TLabel", font=("Segoe UI", 11, "bold")); st.configure("Hint.TLabel", foreground="#555")
         st.configure("Big.TButton", font=("Segoe UI", 11, "bold"), padding=8)
         self.path = None; self.sheet = None; self.header_override = None; self.levels_override = None; self.type_vars = {}; self.result = None
+        self._queue = queue.Queue(); self._polling = False
         root = ttk.Frame(self, padding=14); root.pack(fill="both", expand=True)
 
         ttk.Label(root, text="1. Choose your file", style="H.TLabel").grid(row=0, column=0, sticky="w")
@@ -98,6 +103,10 @@ class App(tk.Tk):
         ttk.Label(opt, text="Ambiguous dates like 03/04/2026:").pack(side="left")
         self.date_var = tk.StringVar(value=list(DATE_CHOICES)[0])
         ttk.Combobox(opt, textvariable=self.date_var, values=list(DATE_CHOICES), state="readonly", width=26).pack(side="left", padx=6)
+        ttk.Label(opt, text="  Country/locale:").pack(side="left", padx=(14, 0))
+        self.locale_var = tk.StringVar(value=LOCALE_DEFAULT)
+        ttk.Combobox(opt, textvariable=self.locale_var, values=[f"{k} - {DESCRIPTIONS[k]}" for k in LOCALE_CHOICES],
+                     state="readonly", width=34).pack(side="left", padx=6)
         self.csv_var = tk.BooleanVar(value=False); ttk.Checkbutton(opt, text="Also save a CSV copy", variable=self.csv_var).pack(side="left", padx=14)
         out = ttk.Frame(root); out.grid(row=7, column=0, sticky="ew", pady=4); out.columnconfigure(1, weight=1)
         ttk.Label(out, text="Save results in:").grid(row=0, column=0)
@@ -109,6 +118,9 @@ class App(tk.Tk):
         self.run_btn = ttk.Button(act, text="Clean file", style="Big.TButton", command=self.clean, state="disabled"); self.run_btn.pack(side="left")
         self.open_file_btn = ttk.Button(act, text="Open cleaned file", command=lambda: open_path(self.result["xlsx"]), state="disabled"); self.open_file_btn.pack(side="left", padx=(14, 6))
         self.open_dir_btn = ttk.Button(act, text="Open output folder", command=lambda: open_path(self.result["out"]), state="disabled"); self.open_dir_btn.pack(side="left")
+        self.progress = ttk.Progressbar(act, mode="indeterminate", length=140)
+        self.progress.pack(side="left", padx=(16, 4))
+        self.status_lbl = ttk.Label(act, text="", style="Hint.TLabel"); self.status_lbl.pack(side="left")
         self.result_lbl = ttk.Label(root, text="", wraplength=840, justify="left"); self.result_lbl.grid(row=10, column=0, sticky="w", pady=6)
         ttk.Label(root, text="Your original file is never changed. In the 'Clean' sheet: yellow = changed with an assumption, orange = unreadable or missing. Check the 'Review' sheet by hand before sending anything.",
                   style="Hint.TLabel", wraplength=840, justify="left").grid(row=11, column=0, sticky="w")
@@ -170,19 +182,54 @@ class App(tk.Tk):
 
     # ---- running -------------------------------------------------------------------------
     def clean(self):
-        if not self.path: return
+        if not self.path or self._polling: return
+        cols = {h: TYPE_LABELS[v.get()] for h, v in self.type_vars.items()}
+        kwargs = dict(
+            date_order=DATE_CHOICES[self.date_var.get()],
+            out_dir=self.out_var.get() or None,
+            also_csv=self.csv_var.get(),
+            sheet=self.sheet, header_row=self.header_override, levels=self.levels_override,
+            skip_totals=self.skip_var.get(), locale=self.locale_var.get(),
+        )
+        self.run_btn.config(state="disabled"); self.progress.start(14)
+        self.status_lbl.config(text="Cleaning… (original file is not modified)")
+        self.result_lbl.config(text="")
+        self._queue = queue.Queue()
+        threading.Thread(target=self._worker, args=(self.path, cols, kwargs), daemon=True).start()
+        self._polling = True; self.after(200, self._poll)
+
+    def _worker(self, path, cols, kwargs):
+        """Runs on a background thread; never touches Tk widgets."""
         try:
-            cols = {h: TYPE_LABELS[v.get()] for h, v in self.type_vars.items()}
-            self.result = run_job(self.path, cols, DATE_CHOICES[self.date_var.get()], self.out_var.get() or None, self.csv_var.get(), self.sheet, self.header_override, self.levels_override, self.skip_var.get())
-        except SystemExit as e: messagebox.showerror("Cleaning stopped", str(e)); return
-        except Exception as e:
-            messagebox.showerror("Unexpected error", f"{type(e).__name__}: {e}\n\n{traceback.format_exc(limit=3)}"); return
-        r = self.result
-        self.result_lbl.config(text=f"Done: {r['rows_in']} rows in, {r['rows_out']} out ({r['removed']} exact duplicates removed).\n"
-                                    f"To check by hand: {r['verify']} yellow (assumption), {r['unresolved']} orange (unreadable), {r['missing']} missing."
-                                    + (f" {r['skipped']} total row(s) were skipped (sheet 'Skipped rows').\n" if r["skipped"] else "\n") +
-                                    f"Saved in: {r['out']}")
-        self.open_file_btn.config(state="normal"); self.open_dir_btn.config(state="normal")
+            result = run_job(path, cols, **kwargs)
+            self._queue.put(("ok", result))
+        except SystemExit as e:
+            self._queue.put(("system_exit", str(e)))
+        except Exception as e:  # pragma: no cover - exercised by GUI smoke tests only
+            self._queue.put(("error", f"{type(e).__name__}: {e}"))
+
+    def _poll(self):
+        """Runs on the Tkinter thread; delivers worker results to the UI."""
+        try:
+            kind, payload = self._queue.get_nowait()
+        except queue.Empty:
+            if self._polling:
+                self.after(200, self._poll)
+            return
+        self._polling = False
+        self.progress.stop(); self.status_lbl.config(text="")
+        self.run_btn.config(state="normal")
+        if kind == "ok":
+            r = payload; self.result = r
+            self.result_lbl.config(text=f"Done: {r['rows_in']} rows in, {r['rows_out']} out ({r['removed']} exact duplicates removed).\n"
+                                        f"To check by hand: {r['verify']} yellow (assumption), {r['unresolved']} orange (unreadable), {r['missing']} missing."
+                                        + (f" {r['skipped']} total row(s) were skipped (sheet 'Skipped rows').\n" if r["skipped"] else "\n") +
+                                        f"Saved in: {r['out']}")
+            self.open_file_btn.config(state="normal"); self.open_dir_btn.config(state="normal")
+        elif kind == "system_exit":
+            messagebox.showerror("Cleaning stopped", payload)
+        else:
+            messagebox.showerror("Unexpected error", payload + "\n\n" + traceback.format_exc(limit=3))
 
 
 def main():

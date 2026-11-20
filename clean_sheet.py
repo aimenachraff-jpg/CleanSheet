@@ -8,7 +8,7 @@ Usage:
 Principles: the input file is never modified; every change is logged; anything ambiguous
 or unparseable is flagged for human review, never silently guessed. Free libs only: openpyxl.
 """
-import argparse, csv, difflib, json, re, sys, unicodedata
+import argparse, codecs, csv, difflib, json, re, sys, unicodedata
 from collections import Counter, defaultdict
 from datetime import date, datetime
 from pathlib import Path
@@ -35,6 +35,12 @@ MONTHS = {m: i + 1 for i, names in enumerate([
     ["nov", "november", "novembre"], ["dec", "december", "decembre", "décembre"]]) for m in names}
 _AR_STRIP = re.compile("[\u064b-\u065f\u0670\u0640]")          # diacritics (tashkeel) and tatweel
 _AR_MAP = str.maketrans({"أ": "ا", "إ": "ا", "آ": "ا", "ٱ": "ا", "ى": "ي", "ئ": "ي", "ؤ": "و", "ة": "ه"})
+_ARABIC_SCRIPT = re.compile(r"[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]")
+def _looks_arabic(s):
+    if not s:
+        return False
+    arab = sum(1 for ch in s if _ARABIC_SCRIPT.search(ch))
+    return arab >= 3 and arab / len(s) >= 0.30
 def ar_norm(s):
     """Normalise Arabic spelling variants for MATCHING only (hamza forms, ya/alef maqsura, ta marbuta, diacritics)."""
     return _AR_STRIP.sub("", s).translate(_AR_MAP)
@@ -321,6 +327,42 @@ def list_sheets(path):
         wb = openpyxl.load_workbook(p, read_only=True, data_only=True); names = list(wb.sheetnames); wb.close(); return names
     return []
 
+def decode_text(raw):
+    """Decode raw file bytes to text, trying UTF-8 family first, then Arabic
+    single-byte codecs (windows-1256 / ISO-8859-6) when the decoded text is
+    Arabic script, falling back to Windows-1252. Never silently mojibakes
+    Arabic CSV files exported from Windows."""
+    if not isinstance(raw, (bytes, bytearray)):
+        raise ValueError("decode_text expects bytes")
+    # UTF-8 with BOM
+    try:
+        return raw.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        pass
+    # Plain UTF-8 (covers UTF-8 Arabic, French, English...)
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError:
+        pass
+    # UTF-16 with BOM (Windows Notepad-style exports)
+    if raw[:2] in (codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE):
+        try:
+            return raw.decode("utf-16")
+        except UnicodeDecodeError:
+            pass
+    # Single-byte codecs decode any byte sequence, so prefer an Arabic codec
+    # only when the decoded text is actually Arabic script.
+    for codec in ("windows-1256", "iso-8859-6"):
+        try:
+            s = raw.decode(codec)
+        except UnicodeDecodeError:
+            continue
+        if _looks_arabic(s):
+            return s
+    # Last resort: Windows-1252 maps every byte, so it never raises here.
+    return raw.decode("cp1252")
+
+
 def _read_grid(path, sheet):
     p = Path(path); hint = None; sname = None; merges = []; fmiss = 0
     if p.suffix.lower() in (".xlsx", ".xlsm"):
@@ -342,9 +384,14 @@ def _read_grid(path, sheet):
         except Exception: pass
     elif p.suffix.lower() in (".csv", ".tsv", ".txt"):
         raw = p.read_bytes()
-        try: text = raw.decode("utf-8-sig")
-        except UnicodeDecodeError: text = raw.decode("cp1252")
-        dialect = csv.excel_tab if p.suffix.lower() == ".tsv" else (csv.Sniffer().sniff(text[:4096], delimiters=",;\t") if text.strip() else csv.excel)
+        text = decode_text(raw)
+        if p.suffix.lower() == ".tsv":
+            dialect = csv.excel_tab
+        else:
+            try:
+                dialect = csv.Sniffer().sniff(text[:4096], delimiters=",;\t") if text.strip() else csv.excel
+            except csv.Error:
+                dialect = csv.excel  # tiny/unusual file: fall back to comma instead of crashing
         grid = [list(r) for r in csv.reader(text.splitlines(), dialect)]
     else: raise SystemExit("Unsupported input type (use .xlsx or .csv)")
     return grid, hint, sname, merges, fmiss
@@ -572,7 +619,7 @@ def report_md(src_name, headers, cfg, rows, keep, removed, log, blanks, cells, t
     L += ["", "Nothing flagged above was silently guessed: yellow/orange cells in the Clean sheet mark each one. The original file was not modified."]
     return "\n".join(L)
 
-def run(path, cfg_path=None, out_dir=None, sheet=None, header_row=None, also_csv=False, write_config=None, levels=None, skip_totals=True, locale="dz"):
+def run(path, cfg_path=None, out_dir=None, sheet=None, header_row=None, also_csv=False, write_config=None, levels=None, skip_totals=True, locale="dz", force=False):
     src = Path(path); info = read_table_info(src, sheet, header_row, levels, skip_totals); headers, rows, blanks = info["headers"], info["rows"], info["blanks"]
     user_cfg = json.loads(Path(cfg_path).read_text(encoding="utf-8")) if cfg_path else {}
     cfg = resolve_config(merge_locale(user_cfg, locale), headers, rows, info["detect_names"])
@@ -581,6 +628,8 @@ def run(path, cfg_path=None, out_dir=None, sheet=None, header_row=None, also_csv
     out = Path(out_dir) if out_dir else src.parent; out.mkdir(parents=True, exist_ok=True)
     target = out / f"{src.stem}_cleaned.xlsx"
     if target.resolve() == src.resolve(): raise SystemExit("Refusing to overwrite the input file")
+    if target.exists() and not force:
+        raise SystemExit(f"Refusing to overwrite existing output: {target}. Choose another --out-dir or pass --force.")
     cells, keep, removed, log = clean_table(headers, rows, cfg)
     write_workbook(target, headers, rows, cfg, cells, keep, removed, log, blanks, src.name, info["note"], info["skipped"], info["warnings"])
     rep = out / f"{src.stem}_report.md"; rep.write_text(report_md(src.name, headers, cfg, rows, keep, removed, log, blanks, cells, info["note"], info["warnings"]), encoding="utf-8")
@@ -595,8 +644,9 @@ def main(argv=None):
     ap.add_argument("input"); ap.add_argument("--config"); ap.add_argument("--out-dir"); ap.add_argument("--sheet")
     ap.add_argument("--header-row", type=int, default=None, help="row number of the LOWEST header row"); ap.add_argument("--levels", type=int, default=None, help="header levels (1 = single header row); default: detect"); ap.add_argument("--keep-total-rows", action="store_true"); ap.add_argument("--also-csv", action="store_true"); ap.add_argument("--write-config")
     ap.add_argument("--locale", default="dz", choices=sorted(LOCALES), help="country pack for phone/price/date rules (default: dz)")
+    ap.add_argument("--force", action="store_true", help="overwrite an existing *_cleaned.xlsx output file")
     a = ap.parse_args(argv)
-    r = run(a.input, a.config, a.out_dir, a.sheet, a.header_row, a.also_csv, a.write_config, a.levels, not a.keep_total_rows, a.locale)
+    r = run(a.input, a.config, a.out_dir, a.sheet, a.header_row, a.also_csv, a.write_config, a.levels, not a.keep_total_rows, a.locale, force=a.force)
     c = Counter(l["status"] for l in r["log"])
     print(f"{r['rows_in']} rows in -> {r['rows_out']} out ({r['removed']} duplicates removed). VERIFY={c['VERIFY']} UNRESOLVED={c['UNRESOLVED']} MISSING={c['MISSING']}")
     print("Wrote:", r["xlsx"], "and", r["report"])

@@ -119,4 +119,13 @@ class Workflow(unittest.TestCase):
             r = cs.run(p, out_dir=d / "o", also_csv=True); self.assertEqual((r["rows_out"], r["removed"]), (1, 1))
             self.assertTrue((d / "o" / "x_cleaned.csv").exists())
 
+    def test_refuses_to_overwrite_existing_output(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d); src = d / "in.xlsx"
+            make_xlsx(src, [["a", 1, 5]], headers=("A", "B", "C"))
+            out = d / "out"; out.mkdir(); (out / "in_cleaned.xlsx").write_text("placeholder")
+            with self.assertRaises(SystemExit): cs.run(src, out_dir=out)
+            r = cs.run(src, out_dir=out, force=True)
+            self.assertTrue(r["xlsx"].exists())
+
 if __name__ == "__main__": unittest.main(verbosity=1)
