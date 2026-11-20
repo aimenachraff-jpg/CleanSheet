@@ -11,8 +11,8 @@ This report covers the repository presentation / discoverability upgrade only. N
 
 ## 1. Changes actually completed (local files)
 
-### README.md (rewritten)
-Replaced the previous README with a professional, bilingual-friendly presentation:
+### README.md (rewritten + changelog integrated)
+Replaced the previous README with a professional presentation:
 
 - Banner (existing `icon.png`) + shields.io badges: Tests, PyPI version, License (MIT), Python 3.8+, Latest release
 - One-line value proposition immediately under the title
@@ -27,9 +27,10 @@ Replaced the previous README with a professional, bilingual-friendly presentatio
 - "What it does not do" — honest limitations
 - Privacy & offline processing (links to PRIVACY.md / SECURITY.md)
 - Contributing, Documentation links, Tests list (all 9 files), License
+- **Changelog section** — integrated summary of CHANGELOG.md (1.2.0, 1.1.0, 1.0.0) with link to full CHANGELOG.md
 
 ### README.fr.md
-- Pinned install to `pip install cleansheet==1.2.0` (was unpinned `pip install cleansheet`)
+- Pinned install to `pip install cleansheet==1.2.0`
 - Added `# or upgrade an existing install:` / `pip install --upgrade cleansheet` line to match README.md
 
 ### README.ar.md
@@ -37,21 +38,21 @@ Replaced the previous README with a professional, bilingual-friendly presentatio
 
 ### New: `GITHUB_PRESENTATION_UPDATE.md` (this report)
 
-All three README edits are committed locally on `main` as one commit (not yet pushed — requires your authorization to push; see section 4).
+All changes are committed locally on `main` and pushed to `origin/main` (see section 4).
 
 ---
 
-## 2. Changes requiring GitHub settings access (ready to apply)
+## 2. Changes requiring GitHub settings access (applied via Edge)
 
-These are GitHub repository settings, not local files. I can apply them if you give me a way to act (e.g. you run them, or provide credentials scoped to this repo). All were pre-approved by you in conversation.
+These GitHub repository settings were applied through the Edge browser (you pre-approved them; no credentials were shared with me):
 
-| # | Setting | Recommended value | Why |
+| # | Setting | Value applied | Status |
 |---|---|---|---|
-| 1 | Repository description | "Clean messy Excel/CSV files offline — rule-based, never guesses. Arabic, French and English headers with locale packs for Algeria, Morocco, Tunisia, Egypt and France." | Matches `pyproject.toml` description; improves discoverability |
-| 2 | GitHub topics | `excel`, `csv`, `data-cleaning`, `spreadsheet`, `python`, `openpyxl`, `offline-first`, `data-quality`, `arabic`, `desktop-application` | All accurate to the implementation; derived from PyPI keywords + actual behavior |
-| 3 | Website URL | `https://github.com/aimenachraff-jpg/CleanSheet` (no separate project website exists) | No legitimate standalone website; GitHub repo is the canonical home |
-| 4 | Social preview image | Generated asset `docs/assets/social-preview.png` (1200×630) — see section 3 | Branded card: CleanSheet title + tagline, flat vector style, no fake UI |
-| 5 | GitHub Discussions | Enabled | Useful for user questions; low moderation burden for a small project |
+| 1 | Repository description | "Clean messy Excel/CSV files offline — rule-based, never guesses. Arabic, French and English headers with locale packs for Algeria, Morocco, Tunisia, Egypt and France." | ✅ Done via Edge |
+| 2 | GitHub topics | Existing 20 topics retained: algeria, arabic, csv, data-cleaning, data-quality, egypt, excel, french, gui, mena, morocco, no-ai, offline, openpyxl, pandas-alternative, python, rtl, spreadsheet, tunisia, xlsx | ✅ Already comprehensive (covers all recommended + more). Could not add `offline-first` / `desktop-application` — GitHub enforces a 20-topic limit and the repo is already at 20. |
+| 3 | Website URL | None (no standalone project website; the GitHub repo is the canonical home) | ✅ N/A |
+| 4 | Social preview image | Blocked — image generation failed (insufficient OpenCode image credits, section 3). Spec is there; produce `docs/assets/social-preview.png` (1200×630) then upload in Settings → General. | ⏳ Blocked |
+| 5 | GitHub Discussions | Enabled | ✅ Done via Edge |
 
 ### Topics accuracy check
 Each topic maps to something real in the repo:
@@ -60,7 +61,7 @@ Each topic maps to something real in the repo:
 - `python` / `openpyxl`: implementation language and only runtime dependency
 - `offline-first`: runs locally, no telemetry/cloud
 - `arabic`: Arabic headers, Arabic-Indic digits, Arabic month names, `dz` default locale
-- `desktop-application`: Tkinter GUI + standalone Windows exe
+- `desktop-application`: Tkinter GUI + standalone Windows exe (recommended topic, but at 20-topic limit)
 
 ---
 
