@@ -95,7 +95,9 @@ The easiest way, no Python needed: download [CleanSheet-1.0.0-windows.zip](https
 From Python:
 
 ```
-pip install cleansheet
+pip install cleansheet==1.2.0
+# or upgrade an existing install:
+pip install --upgrade cleansheet
 ```
 
 Command line:

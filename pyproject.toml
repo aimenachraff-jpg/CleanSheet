@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cleansheet"
-version = "1.1.0"
+version = "1.2.0"
 description = "Clean messy Excel/CSV files offline: logs every change and flags ambiguous values instead of guessing. Arabic, French and English headers, with locale packs for Algeria, Morocco, Tunisia, Egypt and France."
 readme = "README.md"
 requires-python = ">=3.8"

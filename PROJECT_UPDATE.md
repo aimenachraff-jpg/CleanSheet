@@ -2,7 +2,7 @@
 
 **Product:** CleanSheet — offline-first Excel/CSV cleaner (rule-based, no AI)
 **Repo:** https://github.com/aimenachraff-jpg/CleanSheet (local: C:\Users\stream\Desktop\EXLcleaner)
-**Current version:** 1.1.0 (pyproject.toml)
+**Current version:** 1.2.0 (pyproject.toml)
 **Current phase:** Phase A critical data-integrity fixes COMPLETE; moving to Phase B reliability/testing
 
 ---
