@@ -42,6 +42,10 @@ python test_table_detection.py
 python test_multilevel.py
 python test_gui_logic.py
 python test_locale_packs.py
+python test_csv_encoding.py
+python test_gui_locale.py
+python test_gui_thread.py
+python test_reliability.py
 ```
 
 Keep the README honest: if you add a flag or a locale, document it there in the same plain style.

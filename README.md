@@ -143,9 +143,13 @@ python test_table_detection.py
 python test_multilevel.py
 python test_gui_logic.py
 python test_locale_packs.py
+python test_csv_encoding.py
+python test_gui_locale.py
+python test_gui_thread.py
+python test_reliability.py
 ```
 
-57 tests cover the cleaning rules, table and header detection, the GUI logic, and the locale packs.
+83 tests cover the cleaning rules, table and header detection, the GUI logic, the locale packs, CSV encoding edge cases, GUI locale/threading, and reliability (original-file-untouched, reproducibility, large files).
 
 ## License
 
