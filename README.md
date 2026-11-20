@@ -1,6 +1,6 @@
-# CleanSheet
+![CleanSheet — clean messy Excel & CSV files offline](docs/assets/banner.png)
 
-![CleanSheet icon](icon.png)
+# CleanSheet
 
 [![tests](https://github.com/aimenachraff-jpg/CleanSheet/actions/workflows/tests.yml/badge.svg)](https://github.com/aimenachraff-jpg/CleanSheet/actions/workflows/tests.yml)
 [![PyPI](https://img.shields.io/pypi/v/cleansheet)](https://pypi.org/project/cleansheet/)
