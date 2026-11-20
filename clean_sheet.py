@@ -646,7 +646,13 @@ def main(argv=None):
     ap.add_argument("--locale", default="dz", choices=sorted(LOCALES), help="country pack for phone/price/date rules (default: dz)")
     ap.add_argument("--force", action="store_true", help="overwrite an existing *_cleaned.xlsx output file")
     a = ap.parse_args(argv)
-    r = run(a.input, a.config, a.out_dir, a.sheet, a.header_row, a.also_csv, a.write_config, a.levels, not a.keep_total_rows, a.locale, force=a.force)
+    try:
+        r = run(a.input, a.config, a.out_dir, a.sheet, a.header_row, a.also_csv, a.write_config, a.levels, not a.keep_total_rows, a.locale, force=a.force)
+    except SystemExit:
+        raise  # user-facing message (e.g. bad config, missing file), already exit code 1
+    except Exception as e:
+        print(f"Cleaning failed: {type(e).__name__}: {e}", file=sys.stderr)
+        sys.exit(1)
     c = Counter(l["status"] for l in r["log"])
     print(f"{r['rows_in']} rows in -> {r['rows_out']} out ({r['removed']} duplicates removed). VERIFY={c['VERIFY']} UNRESOLVED={c['UNRESOLVED']} MISSING={c['MISSING']}")
     print("Wrote:", r["xlsx"], "and", r["report"])

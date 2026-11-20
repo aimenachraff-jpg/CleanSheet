@@ -13,6 +13,21 @@ from clean_sheet_locales import DESCRIPTIONS
 DATE_CHOICES = {"Day first (31/12/2026)": "dmy", "Month first (12/31/2026)": "mdy"}
 LOCALE_CHOICES = list(DESCRIPTIONS)  # locale codes, shown by description
 LOCALE_DEFAULT = "dz"
+
+# Optional drag-and-drop: tkinterdnd2 is NOT a hard dependency. When it is
+# installed, files can be dropped on the window; otherwise the file picker is
+# the only way to choose a file (no behavior change, no install required).
+try:
+    from tkinterdnd2 import TkinterDnD  # type: ignore
+    HAS_DND = True
+except Exception:  # pragma: no cover - tkinterdnd2 not installed in this env
+    TkinterDnD = None
+    HAS_DND = False
+
+if HAS_DND:
+    from tkinterdnd2 import DND_FILES  # type: ignore
+else:
+    DND_FILES = None
 TYPE_LABELS = {  # friendly names shown in the window -> internal type
     "Name": "name", "Category (city, product...)": "category", "Quantity": "qty", "Price / amount": "price", "Number (score, grade...)": "number",
     "Date": "date", "Phone": "phone", "Email": "email", "ID / reference": "id", "Other text": "text", "Leave untouched": "skip"}
@@ -32,9 +47,10 @@ def inspect_file(path, sheet=None, header_row=None, levels=None, skip_totals=Tru
             if v: vals.append(v[:28])
             if len(vals) == 3: break
         samples[h] = "  |  ".join(vals)
+    preview = [[cs.norm_text(r["raw"][j])[:24] for j in range(len(headers))] for r in rows[:3]]
     return {"headers": headers, "types": {h: cfg["columns"][h] for h in headers}, "samples": samples, "header_row": info["header_row"],
             "how": info["how"], "sheet": info["sheet"], "sheets": cs.list_sheets(path), "note": info["note"], "rows": len(rows),
-            "levels": info["levels"], "warnings": info["warnings"], "skipped": len(info["skipped"])}
+            "levels": info["levels"], "warnings": info["warnings"], "skipped": len(info["skipped"]), "preview": preview}
 
 
 def run_job(path, columns, date_order="dmy", out_dir=None, also_csv=False, sheet=None, header_row=None, levels=None, skip_totals=True, locale=LOCALE_DEFAULT):
@@ -58,16 +74,23 @@ def open_path(p):
     else: subprocess.Popen(["xdg-open", p])
 
 
-class App(tk.Tk):
+class App((TkinterDnD.Tk if HAS_DND else tk.Tk)):
     def __init__(self):
         super().__init__()
         self.title("CleanSheet - Excel/CSV cleaner"); self.geometry("900x720"); self.minsize(780, 620)
+        if HAS_DND:
+            self.drop_target_register(DND_FILES)
+            self.dnd_bind("<<Drop>>", self._on_drop)
         st = ttk.Style(self)
-        for theme in ("vista", "clam"):
+        for theme in ("vista", "clam", "xpnative", "winnative"):
             if theme in st.theme_names(): st.theme_use(theme); break
         base = ("Segoe UI", 10)
-        st.configure(".", font=base); st.configure("H.TLabel", font=("Segoe UI", 11, "bold")); st.configure("Hint.TLabel", foreground="#555")
-        st.configure("Big.TButton", font=("Segoe UI", 11, "bold"), padding=8)
+        ACCENT = "#1F3A5F"  # dark blue, matches the workbook header color
+        st.configure(".", font=base)
+        st.configure("H.TLabel", font=("Segoe UI", 11, "bold"), foreground=ACCENT)
+        st.configure("Hint.TLabel", foreground="#555")
+        st.configure("Big.TButton", font=("Segoe UI", 10, "bold"), padding=7)
+        st.configure("Prev.TLabel", foreground="#333")
         self.path = None; self.sheet = None; self.header_override = None; self.levels_override = None; self.type_vars = {}; self.result = None
         self._queue = queue.Queue(); self._polling = False
         root = ttk.Frame(self, padding=14); root.pack(fill="both", expand=True)
@@ -159,6 +182,21 @@ class App(tk.Tk):
             v = tk.StringVar(value=LABEL_OF[res["types"][h]]); self.type_vars[h] = v
             ttk.Combobox(self.cols_frame, textvariable=v, values=list(TYPE_LABELS), state="readonly", width=24).grid(row=i, column=1, padx=8, pady=2)
             ttk.Label(self.cols_frame, text=res["samples"][h], foreground="#555").grid(row=i, column=2, sticky="w", padx=8)
+        # ---- preview of the first data rows -------------------------------------------
+        prev_row = len(res["headers"]) + 1
+        prev = ttk.Frame(self.cols_frame); prev.grid(row=prev_row, column=0, columnspan=3, sticky="ew", pady=(10, 4))
+        prev.columnconfigure(1, weight=1)
+        ttk.Label(prev, text="Preview — first rows of your data (read-only):", font=("Segoe UI", 9, "bold")).grid(row=0, column=0, sticky="w")
+        prev_text = tk.Text(prev, height=4, wrap="none", font=("Consolas", 9))
+        prev_text.grid(row=0, column=1, sticky="ew")
+        hsb = ttk.Scrollbar(prev, orient="horizontal", command=prev_text.xview); hsb.grid(row=1, column=1, sticky="ew")
+        prev_text.configure(xscrollcommand=hsb.set)
+        lines = ["\t".join(res["headers"])]
+        for row in res.get("preview", []):
+            lines.append("\t".join(row))
+        prev_text.insert("1.0", "\n".join(lines))
+        prev_text.configure(state="disabled")
+        # ------------------------------------------------------------------------------
         self.run_btn.config(state="normal"); self.result_lbl.config(text="")
         self.open_file_btn.config(state="disabled"); self.open_dir_btn.config(state="disabled")
 
@@ -179,6 +217,13 @@ class App(tk.Tk):
     def pick_out(self):
         d = filedialog.askdirectory(title="Choose output folder")
         if d: self.out_var.set(d)
+
+    def _on_drop(self, event):
+        """Handle a file dropped onto the window (tkinterdnd2, when installed)."""
+        if not HAS_DND: return
+        p = (event.data or "").strip().strip("{}")
+        if p and Path(p).is_file() and p.lower().endswith((".xlsx", ".xlsm", ".csv", ".tsv", ".txt")):
+            self.load_file(p)
 
     # ---- running -------------------------------------------------------------------------
     def clean(self):

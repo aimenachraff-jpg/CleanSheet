@@ -1,9 +1,11 @@
-import sys, tempfile, unittest, hashlib, json
+import sys, subprocess, tempfile, unittest, hashlib, json
 from datetime import date, datetime
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import openpyxl
 import clean_sheet as cs
+
+REPO = Path(__file__).resolve().parent
 
 CFG = cs.resolve_config({}, ["Date"])  # defaults
 
@@ -127,5 +129,13 @@ class Workflow(unittest.TestCase):
             with self.assertRaises(SystemExit): cs.run(src, out_dir=out)
             r = cs.run(src, out_dir=out, force=True)
             self.assertTrue(r["xlsx"].exists())
+
+    def test_cli_missing_file_friendly_exit(self):
+        missing = REPO / "does_not_exist.xlsx"
+        res = subprocess.run([sys.executable, str(REPO / "clean_sheet.py"), str(missing)],
+                             capture_output=True, text=True)
+        self.assertNotEqual(res.returncode, 0)
+        self.assertNotIn("Traceback", res.stderr + res.stdout)
+        self.assertIn("Cleaning failed", res.stderr)
 
 if __name__ == "__main__": unittest.main(verbosity=1)
