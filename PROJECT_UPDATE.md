@@ -62,13 +62,13 @@
   - docs/landing-page-spec.md — landing-page spec (free, MIT, no pricing/telemetry/cloud/accounts/AI)
   - 88 tests, all green
 
-## In progress
-- Final validation: full suite re-run + verification loop before considering the work complete
+## Completed tasks
+- Final validation: full suite re-run across all 9 test files — 88 tests, all GREEN
+- Remaining audit findings documented as known limitations (M1 workbook properties/.xlsm macros noted in README+SECURITY.md; M3 global MONTHS low-risk additive; L1 60-row header scan documented) — no code change required, acceptable risk
 
 ## Next steps
-- Final full test run across all 9 test files
-- Consider whether any remaining audit findings (M1 workbook properties, M3 global MONTHS, L1 60-row scan) warrant follow-up fixes
-- No push to GitHub without user authorization
+- No push to GitHub without user authorization (all work is committed locally on `main`, 6 commits ahead of the original baseline)
+- Optional future: M1/M3/L1 hardening if the product evolves
 
 ## Known limitations (pre-existing, documented in README)
 - Reads the first table on the chosen sheet only
