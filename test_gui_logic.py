@@ -40,6 +40,15 @@ class GuiLogic(unittest.TestCase):
             r = g.run_job(p, res["types"], "dmy", Path(d) / "o")
             rows = list(openpyxl.load_workbook(r["xlsx"])["Clean"].values)
             self.assertEqual(rows[1][:4], ("ماريا", "+213555123456", 14.5, 1200.0)); self.assertEqual(rows[2][2], 12)
+    def test_locale_changes_phone_parsing(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = self.make(d); cols = {"Client": "name", "Prix": "price", "Date": "date", "Téléphone": "phone"}
+            phone = lambda loc: openpyxl.load_workbook(g.run_job(p, cols, "dmy", Path(d) / loc, locale=loc)["xlsx"])["Clean"]["D2"].value
+            self.assertEqual(phone("dz"), "+213555123456")
+            self.assertEqual(phone("ma"), "+212555123456")
+            self.assertEqual(phone("generic"), "0555123456")  # no country assumed: kept as written
+            self.assertEqual(g.LOCALE_CHOICES[g.DESCRIPTIONS[g.DEFAULT_LOCALE]], "dz")  # dropdown defaults to Algeria
+            self.assertEqual(set(g.LOCALE_CHOICES.values()), set(g.cs.LOCALES))  # every locale pack is offered
     def test_header_override(self):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "h.xlsx"; wb = openpyxl.Workbook(); ws = wb.active

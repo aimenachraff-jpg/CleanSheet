@@ -8,8 +8,11 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
 import clean_sheet as cs
+from clean_sheet_locales import DESCRIPTIONS
 
 DATE_CHOICES = {"Day first (31/12/2026)": "dmy", "Month first (12/31/2026)": "mdy"}
+LOCALE_CHOICES = {desc: code for code, desc in DESCRIPTIONS.items()}  # label shown -> locale code
+DEFAULT_LOCALE = "dz"
 TYPE_LABELS = {  # friendly names shown in the window -> internal type
     "Name": "name", "Category (city, product...)": "category", "Quantity": "qty", "Price / amount": "price", "Number (score, grade...)": "number",
     "Date": "date", "Phone": "phone", "Email": "email", "ID / reference": "id", "Other text": "text", "Leave untouched": "skip"}
@@ -34,14 +37,14 @@ def inspect_file(path, sheet=None, header_row=None, levels=None, skip_totals=Tru
             "levels": info["levels"], "warnings": info["warnings"], "skipped": len(info["skipped"])}
 
 
-def run_job(path, columns, date_order="dmy", out_dir=None, also_csv=False, sheet=None, header_row=None, levels=None, skip_totals=True):
+def run_job(path, columns, date_order="dmy", out_dir=None, also_csv=False, sheet=None, header_row=None, levels=None, skip_totals=True, locale=DEFAULT_LOCALE):
     """Run the cleaner with an explicit column mapping. Writes the config used next to the output."""
     path = Path(path)
     out = Path(out_dir) if out_dir else path.parent / "cleaned_output"
     out.mkdir(parents=True, exist_ok=True)
     cfg_path = out / f"{path.stem}_used_config.json"
     cfg_path.write_text(json.dumps({"columns": columns, "date_order": date_order}, indent=2, ensure_ascii=False), encoding="utf-8")
-    r = cs.run(path, cfg_path, out, sheet, header_row, also_csv, None, levels, skip_totals)
+    r = cs.run(path, cfg_path, out, sheet, header_row, also_csv, None, levels, skip_totals, locale)
     c = Counter(l["status"] for l in r["log"])
     return {"xlsx": r["xlsx"], "report": r["report"], "out": out, "rows_in": r["rows_in"], "rows_out": r["rows_out"],
             "removed": r["removed"], "verify": c["VERIFY"], "unresolved": c["UNRESOLVED"], "missing": c["MISSING"], "note": r["info"]["note"], "skipped": len(r["info"]["skipped"]), "warnings": r["info"]["warnings"]}
@@ -94,11 +97,16 @@ class App(tk.Tk):
         self.canvas.pack(side="left", fill="both", expand=True); sb.pack(side="right", fill="y")
         self.canvas.bind_all("<MouseWheel>", lambda e: self.canvas.yview_scroll(int(-e.delta / 120), "units"))
 
-        opt = ttk.Frame(root); opt.grid(row=6, column=0, sticky="ew", pady=(4, 2))
+        opts = ttk.Frame(root); opts.grid(row=6, column=0, sticky="ew", pady=(4, 2))
+        opt = ttk.Frame(opts); opt.pack(anchor="w")
         ttk.Label(opt, text="Ambiguous dates like 03/04/2026:").pack(side="left")
         self.date_var = tk.StringVar(value=list(DATE_CHOICES)[0])
         ttk.Combobox(opt, textvariable=self.date_var, values=list(DATE_CHOICES), state="readonly", width=26).pack(side="left", padx=6)
         self.csv_var = tk.BooleanVar(value=False); ttk.Checkbutton(opt, text="Also save a CSV copy", variable=self.csv_var).pack(side="left", padx=14)
+        loc = ttk.Frame(opts); loc.pack(anchor="w", pady=(4, 0))
+        ttk.Label(loc, text="Country (phones, prices):").pack(side="left")
+        self.locale_var = tk.StringVar(value=DESCRIPTIONS[DEFAULT_LOCALE])
+        ttk.Combobox(loc, textvariable=self.locale_var, values=list(LOCALE_CHOICES), state="readonly", width=36).pack(side="left", padx=6)
         out = ttk.Frame(root); out.grid(row=7, column=0, sticky="ew", pady=4); out.columnconfigure(1, weight=1)
         ttk.Label(out, text="Save results in:").grid(row=0, column=0)
         self.out_var = tk.StringVar(); ttk.Entry(out, textvariable=self.out_var).grid(row=0, column=1, sticky="ew", padx=6)
@@ -173,7 +181,8 @@ class App(tk.Tk):
         if not self.path: return
         try:
             cols = {h: TYPE_LABELS[v.get()] for h, v in self.type_vars.items()}
-            self.result = run_job(self.path, cols, DATE_CHOICES[self.date_var.get()], self.out_var.get() or None, self.csv_var.get(), self.sheet, self.header_override, self.levels_override, self.skip_var.get())
+            self.result = run_job(self.path, cols, DATE_CHOICES[self.date_var.get()], self.out_var.get() or None, self.csv_var.get(), self.sheet, self.header_override, self.levels_override, self.skip_var.get(),
+                                  LOCALE_CHOICES[self.locale_var.get()])
         except SystemExit as e: messagebox.showerror("Cleaning stopped", str(e)); return
         except Exception as e:
             messagebox.showerror("Unexpected error", f"{type(e).__name__}: {e}\n\n{traceback.format_exc(limit=3)}"); return
