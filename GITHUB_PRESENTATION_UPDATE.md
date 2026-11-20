@@ -83,18 +83,18 @@ If you top up OpenCode image credits, I can regenerate it. Otherwise you or a de
 ## 4. Changes completed / remaining
 
 **Completed (pushed to GitHub `main`):**
-1. Push of README rewrite + ar/fr pin + this report — pushed as `3d5c316` (merge of origin/main). `origin/main` is now up to date with local `main`.
+1. Push of README rewrite + ar/fr pin + this report — pushed as `6b1ec3d` (merge of origin/main). `origin/main` is now up to date with local `main`.
 
-**Still to apply (GitHub settings — pre-approved by you, but I have no credentials/API path to set them; report below with exact values so you or I can apply via the repo Settings UI):**
+**Completed via Edge (GitHub settings, pre-approved by you):**
 
-| # | Setting | Recommended value |
-|---|---|---|
-| 1 | Repository description | "Clean messy Excel/CSV files offline — rule-based, never guesses. Arabic, French and English headers with locale packs for Algeria, Morocco, Tunisia, Egypt and France." |
-| 2 | GitHub topics | `excel`, `csv`, `data-cleaning`, `spreadsheet`, `python`, `openpyxl`, `offline-first`, `data-quality`, `arabic`, `desktop-application` |
-| 3 | Website URL | None (no standalone project website; the GitHub repo is the canonical home) |
-| 4 | Social preview image | Blocked — image generation failed (insufficient OpenCode image credits, section 3). Spec is there; produce `docs/assets/social-preview.png` (1200×630) then upload in Settings → General. |
-| 5 | GitHub Discussions | Enabled |
-| 6 | GitHub release for v1.2.0 | Optional. PyPI package is already live; a GitHub release would surface the exe/assets. |
+| # | Setting | Value applied | Status |
+|---|---|---|---|
+| 1 | Repository description | "Clean messy Excel/CSV files offline — rule-based, never guesses. Arabic, French and English headers with locale packs for Algeria, Morocco, Tunisia, Egypt and France." | ✅ Done via Edge |
+| 2 | GitHub topics | Existing 20 topics retained: algeria, arabic, csv, data-cleaning, data-quality, egypt, excel, french, gui, mena, morocco, no-ai, offline, openpyxl, pandas-alternative, python, rtl, spreadsheet, tunisia, xlsx | ✅ Already comprehensive (covers all recommended + more). Could not add `offline-first` / `desktop-application` — GitHub enforces a 20-topic limit and the repo is already at 20. |
+| 3 | Website URL | None (no standalone project website; the GitHub repo is the canonical home) | ✅ N/A |
+| 4 | GitHub Discussions | Enabled | ✅ Done via Edge |
+| 5 | Social preview image | Blocked — image generation failed (insufficient OpenCode image credits, section 3). Spec is there; produce `docs/assets/social-preview.png` (1200×630) then upload in Settings → General. | ⏳ Blocked |
+| 6 | GitHub release for v1.2.0 | Optional. PyPI package is already live; a GitHub release would surface the exe/assets. | ⏳ Optional, not done |
 
 Working tree: clean. `main` is in sync with `origin/main`.
 
