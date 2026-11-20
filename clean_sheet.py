@@ -23,6 +23,7 @@ DEFAULTS = {
     "leading_zero_required": True,
     "currency_tokens": ["dzd", "da", "dinars", "dinar", "eur", "usd", "€", "$", "دينار جزائري", "دينار", "دنانير", "د.ج", "د ج", "دج"],
     "category_maps": {}, "similarity_threshold": 0.88, "id_column": None,
+    "dedup_keys": None,          # list of column names to consider for duplicate detection (None = whole row)
 }
 NUM_WORDS = {"zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7,
              "eight": 8, "nine": 9, "ten": 10, "un": 1, "une": 1, "deux": 2, "trois": 3, "quatre": 4,
@@ -504,10 +505,14 @@ def clean_table(headers, rows, cfg):
             elif s in ("verify", "fail", "missing"):
                 st = {"verify": "VERIFY", "fail": "UNRESOLVED", "missing": "MISSING"}[s]
                 log.append({"row": rows[i]["src"], "column": h, "before": o, "after": v, "status": st, "note": m})
-    # exact duplicates (all columns identical after cleaning) -> removed, first kept
+    # exact duplicates -> removed, first kept.
+    # dedup_keys (list of header names, from --config) restricts the comparison
+    # to those columns; None (default) compares the whole cleaned row.
+    dedup_keys = cfg.get("dedup_keys") or []
+    keycols = [j for j, h in enumerate(headers) if h in dedup_keys] if dedup_keys else list(range(len(headers)))
     keyrow, removed, keep = {}, [], []
     for i in range(n):
-        k = tuple(repr(cells[(i, j)][0]) for j in range(len(headers)))
+        k = tuple(repr(cells[(i, j)][0]) for j in keycols)
         if k in keyrow: removed.append((i, keyrow[k]))
         else: keyrow[k] = i; keep.append(i)
     for i, first in removed:
@@ -619,43 +624,73 @@ def report_md(src_name, headers, cfg, rows, keep, removed, log, blanks, cells, t
     L += ["", "Nothing flagged above was silently guessed: yellow/orange cells in the Clean sheet mark each one. The original file was not modified."]
     return "\n".join(L)
 
-def run(path, cfg_path=None, out_dir=None, sheet=None, header_row=None, also_csv=False, write_config=None, levels=None, skip_totals=True, locale="dz", force=False):
+def run(path, cfg_path=None, out_dir=None, sheet=None, header_row=None, also_csv=False, write_config=None, levels=None, skip_totals=True, locale="dz", force=False, dry_run=False, export_log=False):
     src = Path(path); info = read_table_info(src, sheet, header_row, levels, skip_totals); headers, rows, blanks = info["headers"], info["rows"], info["blanks"]
     user_cfg = json.loads(Path(cfg_path).read_text(encoding="utf-8")) if cfg_path else {}
     cfg = resolve_config(merge_locale(user_cfg, locale), headers, rows, info["detect_names"])
     if write_config:
         Path(write_config).write_text(json.dumps({k: v for k, v in cfg.items() if not k.startswith("_")}, indent=2, ensure_ascii=False), encoding="utf-8")
+    cells, keep, removed, log = clean_table(headers, rows, cfg)
+    if dry_run:
+        # No output files are written; the result dict still reflects what would happen.
+        return {"xlsx": None, "report": None, "rows_in": len(rows), "rows_out": len(keep), "removed": len(removed),
+                "log": log, "cells": cells, "keep": keep, "headers": headers, "cfg": cfg, "info": info}
     out = Path(out_dir) if out_dir else src.parent; out.mkdir(parents=True, exist_ok=True)
     target = out / f"{src.stem}_cleaned.xlsx"
     if target.resolve() == src.resolve(): raise SystemExit("Refusing to overwrite the input file")
     if target.exists() and not force:
         raise SystemExit(f"Refusing to overwrite existing output: {target}. Choose another --out-dir or pass --force.")
-    cells, keep, removed, log = clean_table(headers, rows, cfg)
     write_workbook(target, headers, rows, cfg, cells, keep, removed, log, blanks, src.name, info["note"], info["skipped"], info["warnings"])
     rep = out / f"{src.stem}_report.md"; rep.write_text(report_md(src.name, headers, cfg, rows, keep, removed, log, blanks, cells, info["note"], info["warnings"]), encoding="utf-8")
     if also_csv:
         with open(out / f"{src.stem}_cleaned.csv", "w", newline="", encoding="utf-8") as f:
             w = csv.writer(f); w.writerow(headers)
             for i in keep: w.writerow([("" if cells[(i, j)][0] is None else cells[(i, j)][0]) for j in range(len(headers))])
+    if export_log:
+        audit_csv = out / f"{src.stem}_audit.csv"
+        with open(audit_csv, "w", newline="", encoding="utf-8") as f:
+            w = csv.writer(f); w.writerow(["Source row", "Column", "Before", "After", "Status", "Note"])
+            for l in sorted(log, key=lambda x: (x["row"], x["column"])):
+                w.writerow([l["row"], l["column"],
+                            "" if l["before"] is None else l["before"],
+                            "" if l["after"] is None else l["after"], l["status"], l["note"]])
     return {"xlsx": target, "report": rep, "rows_in": len(rows), "rows_out": len(keep), "removed": len(removed), "log": log, "cells": cells, "keep": keep, "headers": headers, "cfg": cfg, "info": info}
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("input"); ap.add_argument("--config"); ap.add_argument("--out-dir"); ap.add_argument("--sheet")
+    ap.add_argument("input", nargs="+", help="Excel/CSV file(s) to clean")
+    ap.add_argument("--config"); ap.add_argument("--out-dir"); ap.add_argument("--sheet")
     ap.add_argument("--header-row", type=int, default=None, help="row number of the LOWEST header row"); ap.add_argument("--levels", type=int, default=None, help="header levels (1 = single header row); default: detect"); ap.add_argument("--keep-total-rows", action="store_true"); ap.add_argument("--also-csv", action="store_true"); ap.add_argument("--write-config")
     ap.add_argument("--locale", default="dz", choices=sorted(LOCALES), help="country pack for phone/price/date rules (default: dz)")
     ap.add_argument("--force", action="store_true", help="overwrite an existing *_cleaned.xlsx output file")
+    ap.add_argument("--dry-run", action="store_true", help="report what would change without writing any output file")
+    ap.add_argument("--export-log", action="store_true", help="also write a *_audit.csv change log next to the output")
     a = ap.parse_args(argv)
-    try:
-        r = run(a.input, a.config, a.out_dir, a.sheet, a.header_row, a.also_csv, a.write_config, a.levels, not a.keep_total_rows, a.locale, force=a.force)
-    except SystemExit:
-        raise  # user-facing message (e.g. bad config, missing file), already exit code 1
-    except Exception as e:
-        print(f"Cleaning failed: {type(e).__name__}: {e}", file=sys.stderr)
-        sys.exit(1)
-    c = Counter(l["status"] for l in r["log"])
-    print(f"{r['rows_in']} rows in -> {r['rows_out']} out ({r['removed']} duplicates removed). VERIFY={c['VERIFY']} UNRESOLVED={c['UNRESOLVED']} MISSING={c['MISSING']}")
-    print("Wrote:", r["xlsx"], "and", r["report"])
+    if len(a.input) > 1 and a.write_config:
+        raise SystemExit("--write-config is not supported when cleaning multiple files at once")
+    kwargs = dict(cfg_path=a.config, out_dir=a.out_dir, sheet=a.sheet, header_row=a.header_row,
+                  also_csv=a.also_csv, write_config=a.write_config, levels=a.levels,
+                  skip_totals=not a.keep_total_rows, locale=a.locale, force=a.force,
+                  dry_run=a.dry_run, export_log=a.export_log)
+    if len(a.input) == 1:
+        try: r = run(a.input[0], **kwargs)
+        except SystemExit: raise  # user-facing message, already exit code 1
+        except Exception as e:
+            print(f"Cleaning failed: {type(e).__name__}: {e}", file=sys.stderr); sys.exit(1)
+        c = Counter(l["status"] for l in r["log"])
+        print(f"{r['rows_in']} rows in -> {r['rows_out']} out ({r['removed']} duplicates removed). VERIFY={c['VERIFY']} UNRESOLVED={c['UNRESOLVED']} MISSING={c['MISSING']}")
+        if not a.dry_run: print("Wrote:", r["xlsx"], "and", r["report"])
+    else:
+        failed = 0
+        for path in a.input:
+            try:
+                r = run(path, **kwargs)
+                c = Counter(l["status"] for l in r["log"])
+                print(f"OK {Path(path).name}: {r['rows_in']} rows -> {r['rows_out']} out ({r['removed']} removed, VERIFY={c['VERIFY']}, UNRESOLVED={c['UNRESOLVED']}). Wrote {r['xlsx']}")
+            except SystemExit as e:
+                failed += 1; print(f"SKIP {path}: {e}", file=sys.stderr)
+        print(f"Batch done: {len(a.input) - failed} succeeded, {failed} failed")
+        sys.exit(1 if failed else 0)
 
 if __name__ == "__main__":
     main()

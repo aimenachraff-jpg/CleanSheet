@@ -1,15 +1,18 @@
-"""Reliability and regression tests (Phase 2).
+"""Reliability and regression tests (Phase 2 + Phase D features).
 
 Covers: ambiguous duplicates / false positives, dates, decimal separators,
 currencies, phone numbers, missing values, malformed and large files,
-original-file-untouched, output reproducibility, config round-trip.
+original-file-untouched, output reproducibility, config round-trip,
+customizable dedup keys, dry-run, exportable audit log, batch CLI.
 """
-import sys, tempfile, time, unittest, hashlib
+import json, sys, subprocess, tempfile, time, unittest, hashlib
 from datetime import date, datetime
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import openpyxl
 import clean_sheet as cs
+
+REPO = Path(__file__).resolve().parent
 
 CFG = cs.resolve_config({}, ["D"])
 
@@ -146,4 +149,57 @@ class LargeAndMalformed(unittest.TestCase):
             self.assertEqual(r["rows_out"], 1)
 
 
+class Features(unittest.TestCase):
+    def test_dedup_keys_removes_on_key_columns_only(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d); src = d / "dedup.xlsx"
+            make_xlsx(src, [
+                [1, "Ali", "Oran", "2", "100", "2026-01-01", "0555123456"],
+                [2, "Ali", "Oran", "2", "100", "2026-01-02", "0661001122"],   # same key content, new ID
+                [3, "Sara", "Alger", "1", "50", "2026-01-03", "0770112233"],
+            ], headers=("ID", "Customer", "City", "Qty", "Price", "Date", "Phone"))
+            # default: whole-row dedup -> both Ali rows kept (IDs differ)
+            r1 = cs.run(src, out_dir=d / "o1")
+            self.assertEqual(r1["rows_out"], 3)
+            # dedup on Customer+City+Qty+Price -> row 2 removed as duplicate of row 1
+            cfg = {"dedup_keys": ["Customer", "City", "Qty", "Price"]}
+            cfgp = d / "c.json"; cfgp.write_text(json.dumps(cfg), encoding="utf-8")
+            r2 = cs.run(src, cfg_path=cfgp, out_dir=d / "o2")
+            self.assertEqual(r2["rows_out"], 2)
+            ids = [row[0] for row in list(openpyxl.load_workbook(r2["xlsx"])["Clean"].values)[1:]]
+            self.assertEqual(ids, [1, 3])
+
+    def test_dry_run_writes_no_files(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d); src = d / "in.xlsx"
+            make_xlsx(src, [["Ali", "100"]], headers=("Customer", "Price"))
+            r = cs.run(src, out_dir=d / "o", dry_run=True)
+            self.assertIsNone(r["xlsx"]); self.assertIsNone(r["report"])
+            self.assertEqual(r["rows_out"], 1)
+            self.assertFalse((d / "o").exists())
+
+    def test_export_log_writes_audit_csv(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d); src = d / "in.xlsx"
+            make_xlsx(src, [["Ali", "abc"]], headers=("Customer", "Price"))
+            r = cs.run(src, out_dir=d / "o", export_log=True)
+            audit = d / "o" / "in_audit.csv"
+            self.assertTrue(audit.exists())
+            text = audit.read_text(encoding="utf-8")
+            self.assertIn("UNRESOLVED", text); self.assertIn("could not read price", text)
+
+    def test_batch_cli_succeeds(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            for name in ("a.xlsx", "b.xlsx"):
+                p = d / name; make_xlsx(p, [["Ali", "100"]], headers=("Customer", "Price"))
+            res = subprocess.run([sys.executable, str(REPO / "clean_sheet.py"), str(d / "a.xlsx"), str(d / "b.xlsx")],
+                                 capture_output=True, text=True, cwd=str(REPO))
+            self.assertEqual(res.returncode, 0, res.stderr)
+            self.assertIn("Batch done: 2 succeeded, 0 failed", res.stdout)
+            self.assertTrue((d / "a_cleaned.xlsx").exists())
+            self.assertTrue((d / "b_cleaned.xlsx").exists())
+
+
 if __name__ == "__main__": unittest.main(verbosity=1)
+

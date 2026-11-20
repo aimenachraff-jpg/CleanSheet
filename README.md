@@ -149,7 +149,7 @@ python test_gui_thread.py
 python test_reliability.py
 ```
 
-83 tests cover the cleaning rules, table and header detection, the GUI logic, the locale packs, CSV encoding edge cases, GUI locale/threading, and reliability (original-file-untouched, reproducibility, large files).
+88 tests cover the cleaning rules, table and header detection, the GUI logic, the locale packs, CSV encoding edge cases, GUI locale/threading, and reliability (original-file-untouched, reproducibility, large files, batch, dry-run, audit log, dedup keys).
 
 ## License
 
